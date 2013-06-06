@@ -45,13 +45,14 @@ else
 	| split -l 8000000 --filter='pigz - > $FILE.gz' - processed/$archive/requests_
 fi
 
-#gsutil cp pages.csv.gz gs://runs/may15_pages.csv.gz
-
 cd processed/${archive}
 
 table=$(date --date="$(echo $adate | sed "s/_/ /g" -)" "+%Y_%m_%d")
 ptable="runs.${table}_pages"
 rtable="runs.${table}_requests"
+
+echo -e "Syncing data to Google Storage"
+gsutil cp -n * gs://httparchive/${archive}/
 
 if [[ $mobile == 1 ]]; then
   ptable="${ptable}_mobile"
