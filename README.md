@@ -2,7 +2,7 @@
 
 _Note: you don't need to import this data yourself, the BigQuery dataset is public! [Getting started](http://www.igvita.com/2013/06/20/http-archive-bigquery-web-performance-answers/)._
 
-However, if you do want your own private copy of the dataset... Then the following import and sync scripts will help you import the [HTTP Archive dataset](http://httparchive.org/downloads.php) into BigQuery (and keeping it up to date).
+However, if you do want your own private copy of the dataset... The following import and sync scripts will help you import the [HTTP Archive dataset](http://httparchive.org/downloads.php) into BigQuery and keep it up to date.
 
 ```bash
 $> sh sync.sh Jun_15_2013
@@ -27,4 +27,4 @@ $> bq.py cp runs.2013_06_15_requests runs.latest_requests
 $> bq.py cp runs.2013_06_15_requests_mobiel runs.latest_requests_mobile
 ```
 
-(MIT License) - Copyright (c) 2012 Ilya Grigorik
+(MIT License) - Copyright (c) 2013 Ilya Grigorik
