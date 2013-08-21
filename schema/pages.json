@@ -16,6 +16,10 @@
     "type": "STRING"
   },
   {
+    "name": "crawlid",
+    "type": "INTEGER"
+  },
+  {
     "name": "wptid",
     "type": "STRING"
   },
@@ -30,6 +34,10 @@
   {
     "name": "urlShort",
     "type": "STRING"
+  },
+  {
+    "name": "urlhash",
+    "type": "INTEGER"
   },
   {
     "name": "cdn",

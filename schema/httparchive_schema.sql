@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.5.29, for debian-linux-gnu (x86_64)
+-- MySQL dump 10.13  Distrib 5.5.32, for debian-linux-gnu (x86_64)
 --
 -- Host: localhost    Database: httparchive
 -- ------------------------------------------------------
--- Server version	5.5.29-0ubuntu0.12.04.1-log
+-- Server version	5.5.31-0ubuntu0.12.04.2-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,6 +23,7 @@
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `stats` (
   `label` varchar(32) NOT NULL,
+  `crawlid` int(10) unsigned NOT NULL,
   `slice` varchar(32) NOT NULL,
   `device` varchar(32) NOT NULL,
   `version` int(6) unsigned NOT NULL,
@@ -167,7 +168,7 @@ CREATE TABLE `requests` (
   PRIMARY KEY (`requestid`),
   UNIQUE KEY `startedDateTime` (`startedDateTime`,`pageid`,`urlShort`),
   KEY `pageid` (`pageid`)
-) ENGINE=MyISAM AUTO_INCREMENT=592251526 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=874353402 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -181,10 +182,12 @@ CREATE TABLE `pages` (
   `createDate` int(10) unsigned NOT NULL,
   `archive` varchar(16) NOT NULL,
   `label` varchar(32) NOT NULL,
+  `crawlid` int(10) unsigned NOT NULL,
   `wptid` varchar(64) NOT NULL,
   `wptrun` int(2) unsigned NOT NULL,
   `url` text,
   `urlShort` varchar(255) DEFAULT NULL,
+  `urlhash` int(8) unsigned DEFAULT NULL,
   `cdn` varchar(64) DEFAULT NULL,
   `startedDateTime` int(10) unsigned DEFAULT NULL,
   `TTFB` smallint(5) unsigned DEFAULT NULL,
@@ -238,8 +241,9 @@ CREATE TABLE `pages` (
   `gzipTotal` int(10) unsigned NOT NULL,
   `gzipSavings` int(10) unsigned NOT NULL,
   PRIMARY KEY (`pageid`),
-  UNIQUE KEY `label` (`label`,`urlShort`)
-) ENGINE=MyISAM AUTO_INCREMENT=7361082 DEFAULT CHARSET=latin1;
+  UNIQUE KEY `label` (`label`,`urlShort`),
+  KEY `urlhash` (`urlhash`)
+) ENGINE=MyISAM AUTO_INCREMENT=10717150 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -307,7 +311,7 @@ CREATE TABLE `requestsmobile` (
   PRIMARY KEY (`requestid`),
   UNIQUE KEY `startedDateTime` (`startedDateTime`,`pageid`,`urlShort`),
   KEY `pageid` (`pageid`)
-) ENGINE=MyISAM AUTO_INCREMENT=7495246 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=10440581 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -321,10 +325,12 @@ CREATE TABLE `pagesmobile` (
   `createDate` int(10) unsigned NOT NULL,
   `archive` varchar(16) NOT NULL,
   `label` varchar(32) NOT NULL,
+  `crawlid` int(10) unsigned NOT NULL,
   `wptid` varchar(64) NOT NULL,
   `wptrun` int(2) unsigned NOT NULL,
   `url` text,
   `urlShort` varchar(255) DEFAULT NULL,
+  `urlhash` int(8) unsigned DEFAULT NULL,
   `cdn` varchar(64) DEFAULT NULL,
   `startedDateTime` int(10) unsigned DEFAULT NULL,
   `TTFB` smallint(5) unsigned DEFAULT NULL,
@@ -379,7 +385,7 @@ CREATE TABLE `pagesmobile` (
   `gzipSavings` int(10) unsigned NOT NULL,
   PRIMARY KEY (`pageid`),
   UNIQUE KEY `label` (`label`,`urlShort`)
-) ENGINE=MyISAM AUTO_INCREMENT=141440 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=192740 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -393,6 +399,7 @@ CREATE TABLE `crawls` (
   `label` varchar(32) NOT NULL,
   `archive` varchar(32) NOT NULL,
   `location` varchar(32) NOT NULL,
+  `notes` varchar(64) DEFAULT NULL,
   `video` tinyint(1) NOT NULL,
   `docComplete` tinyint(1) NOT NULL,
   `fvonly` tinyint(1) NOT NULL,
@@ -409,7 +416,7 @@ CREATE TABLE `crawls` (
   `numRequests` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`crawlid`),
   KEY `label` (`label`,`archive`,`location`)
-) ENGINE=MyISAM AUTO_INCREMENT=150 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=176 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -419,6 +426,7 @@ CREATE TABLE `crawls` (
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `urls` (
+  `timeAdded` int(10) unsigned NOT NULL,
   `urlhash` int(8) unsigned DEFAULT NULL,
   `urlOrig` blob NOT NULL,
   `urlFixed` text,
@@ -440,4 +448,4 @@ CREATE TABLE `urls` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2013-03-20 21:54:17
+-- Dump completed on 2013-08-20 22:16:32
