@@ -1,250 +1,258 @@
 [
   {
-    "name": "pageid",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "pageid"
   },
   {
-    "name": "createDate",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "createDate"
   },
   {
-    "name": "archive",
-    "type": "STRING"
+    "type": "STRING",
+    "name": "archive"
   },
   {
-    "name": "label",
-    "type": "STRING"
+    "type": "STRING",
+    "name": "label"
   },
   {
-    "name": "crawlid",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "crawlid"
   },
   {
-    "name": "wptid",
-    "type": "STRING"
+    "type": "STRING",
+    "name": "wptid"
   },
   {
-    "name": "wptrun",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "wptrun"
   },
   {
-    "name": "url",
-    "type": "STRING"
+    "type": "STRING",
+    "name": "url"
   },
   {
-    "name": "urlShort",
-    "type": "STRING"
+    "type": "STRING",
+    "name": "urlShort"
   },
   {
-    "name": "urlhash",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "urlhash"
   },
   {
-    "name": "cdn",
-    "type": "STRING"
+    "type": "STRING",
+    "name": "cdn"
   },
   {
-    "name": "startedDateTime",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "startedDateTime"
   },
   {
-    "name": "TTFB",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "TTFB"
   },
   {
-    "name": "renderStart",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "renderStart"
   },
   {
-    "name": "onContentLoaded",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "onContentLoaded"
   },
   {
-    "name": "onLoad",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "onLoad"
   },
   {
-    "name": "fullyLoaded",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "fullyLoaded"
   },
   {
-    "name": "visualComplete",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "visualComplete"
   },
   {
-    "name": "PageSpeed",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "PageSpeed"
   },
   {
-    "name": "SpeedIndex",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "SpeedIndex"
   },
   {
-    "name": "rank",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "rank"
   },
   {
-    "name": "reqTotal",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqTotal"
   },
   {
-    "name": "reqHtml",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqHtml"
   },
   {
-    "name": "reqJS",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqJS"
   },
   {
-    "name": "reqCSS",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqCSS"
   },
   {
-    "name": "reqImg",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqImg"
   },
   {
-    "name": "reqGif",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqGif"
   },
   {
-    "name": "reqJpg",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqJpg"
   },
   {
-    "name": "reqPng",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqPng"
   },
   {
-    "name": "reqFont",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqFont"
   },
   {
-    "name": "reqFlash",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqFlash"
   },
   {
-    "name": "reqJson",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqJson"
   },
   {
-    "name": "reqOther",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "reqOther"
   },
   {
-    "name": "bytesTotal",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesTotal"
   },
   {
-    "name": "bytesHtml",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesHtml"
   },
   {
-    "name": "bytesJS",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesJS"
   },
   {
-    "name": "bytesCSS",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesCSS"
   },
   {
-    "name": "bytesImg",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesImg"
   },
   {
-    "name": "bytesGif",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesGif"
   },
   {
-    "name": "bytesJpg",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesJpg"
   },
   {
-    "name": "bytesPng",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesPng"
   },
   {
-    "name": "bytesFont",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesFont"
   },
   {
-    "name": "bytesFlash",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesFlash"
   },
   {
-    "name": "bytesJson",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesJson"
   },
   {
-    "name": "bytesOther",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesOther"
   },
   {
-    "name": "bytesHtmlDoc",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "bytesHtmlDoc"
   },
   {
-    "name": "numDomains",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "numDomains"
   },
   {
-    "name": "maxDomainReqs",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "maxDomainReqs"
   },
   {
-    "name": "numRedirects",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "numRedirects"
   },
   {
-    "name": "numErrors",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "numErrors"
   },
   {
-    "name": "numGlibs",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "numGlibs"
   },
   {
-    "name": "numHttps",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "numHttps"
   },
   {
-    "name": "numCompressed",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "numCompressed"
   },
   {
-    "name": "numDomElements",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "numDomElements"
   },
   {
-    "name": "maxageNull",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "maxageNull"
   },
   {
-    "name": "maxage0",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "maxage0"
   },
   {
-    "name": "maxage1",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "maxage1"
   },
   {
-    "name": "maxage30",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "maxage30"
   },
   {
-    "name": "maxage365",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "maxage365"
   },
   {
-    "name": "maxageMore",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "maxageMore"
   },
   {
-    "name": "gzipTotal",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "gzipTotal"
   },
   {
-    "name": "gzipSavings",
-    "type": "INTEGER"
+    "type": "INTEGER",
+    "name": "gzipSavings"
+  },
+  {
+    "type": "INTEGER",
+    "name": "_connections"
+  },
+  {
+    "type": "BOOLEAN",
+    "name": "_adult_site"
   }
 ]
