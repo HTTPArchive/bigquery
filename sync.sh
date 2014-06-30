@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DATA=data
+DATA=$HOME/archive
 BASE=`pwd`
 
 if [ -n "$1" ]; then
@@ -44,7 +44,7 @@ else
   echo -e "Converting requests data"
   gunzip -c "httparchive_${archive}_requests.csv.gz" \
 	| sed -e 's/\\N,/"",/g' -e 's/\\N$/""/g' -e 's/\\"/""/g' -e 's/\\"","/\\\\","/g' \
-	| split -l 8000000 --filter='pigz - > $FILE.gz' - processed/$archive/requests_
+	| split --lines=8000000 --filter='pigz - > $FILE.gz' - processed/$archive/requests_
 fi
 
 cd processed/${archive}
@@ -66,20 +66,17 @@ else
 fi
 
 echo -e "Submitting new pages import (${ptable}) to BigQuery"
-$BASE/tools/bigquery-2.0.12/bq.py --nosync load $ptable \
-	gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
+bq --nosync load $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
 
 first=1
 for f in `ls -r requests_*`; do
   if [[ $first == 1 ]]; then
     echo "Submitting new requests import (${rtable}) to BigQuery: $f"
-    $BASE/tools/bigquery-2.0.12/bq.py $nosync load $rtable \
-	gs://httparchive/${archive}/$f $BASE/schema/requests.json
+    bq $nosync load $rtable gs://httparchive/${archive}/$f $BASE/schema/requests.json
     first=0
   else
     echo "Submitting append requests import (${rtable}) to BigQuery: $f"
-    $BASE/tools/bigquery-2.0.12/bq.py --nosync load $rtable \
-	gs://httparchive/${archive}/$f
+    bq --nosync load $rtable gs://httparchive/${archive}/$f
   fi
 done
 
