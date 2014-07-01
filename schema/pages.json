@@ -1,258 +1,294 @@
 [
   {
-    "type": "INTEGER",
-    "name": "pageid"
+    "name": "pageid",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "createDate"
+    "name": "createDate",
+    "type": "INTEGER"
   },
   {
-    "type": "STRING",
-    "name": "archive"
+    "name": "archive",
+    "type": "STRING"
   },
   {
-    "type": "STRING",
-    "name": "label"
+    "name": "label",
+    "type": "STRING"
   },
   {
-    "type": "INTEGER",
-    "name": "crawlid"
+    "name": "crawlid",
+    "type": "INTEGER"
   },
   {
-    "type": "STRING",
-    "name": "wptid"
+    "name": "wptid",
+    "type": "STRING"
   },
   {
-    "type": "INTEGER",
-    "name": "wptrun"
+    "name": "wptrun",
+    "type": "INTEGER"
   },
   {
-    "type": "STRING",
-    "name": "url"
+    "name": "url",
+    "type": "STRING"
   },
   {
-    "type": "STRING",
-    "name": "urlShort"
+    "name": "urlShort",
+    "type": "STRING"
   },
   {
-    "type": "INTEGER",
-    "name": "urlhash"
+    "name": "urlhash",
+    "type": "INTEGER"
   },
   {
-    "type": "STRING",
-    "name": "cdn"
+    "name": "cdn",
+    "type": "STRING"
   },
   {
-    "type": "INTEGER",
-    "name": "startedDateTime"
+    "name": "startedDateTime",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "TTFB"
+    "name": "TTFB",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "renderStart"
+    "name": "renderStart",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "onContentLoaded"
+    "name": "onContentLoaded",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "onLoad"
+    "name": "onLoad",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "fullyLoaded"
+    "name": "fullyLoaded",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "visualComplete"
+    "name": "visualComplete",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "PageSpeed"
+    "name": "PageSpeed",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "SpeedIndex"
+    "name": "SpeedIndex",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "rank"
+    "name": "rank",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqTotal"
+    "name": "reqTotal",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqHtml"
+    "name": "reqHtml",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqJS"
+    "name": "reqJS",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqCSS"
+    "name": "reqCSS",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqImg"
+    "name": "reqImg",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqGif"
+    "name": "reqGif",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqJpg"
+    "name": "reqJpg",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqPng"
+    "name": "reqPng",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqFont"
+    "name": "reqFont",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqFlash"
+    "name": "reqFlash",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqJson"
+    "name": "reqJson",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "reqOther"
+    "name": "reqOther",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesTotal"
+    "name": "bytesTotal",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesHtml"
+    "name": "bytesHtml",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesJS"
+    "name": "bytesJS",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesCSS"
+    "name": "bytesCSS",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesImg"
+    "name": "bytesImg",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesGif"
+    "name": "bytesGif",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesJpg"
+    "name": "bytesJpg",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesPng"
+    "name": "bytesPng",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesFont"
+    "name": "bytesFont",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesFlash"
+    "name": "bytesFlash",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesJson"
+    "name": "bytesJson",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesOther"
+    "name": "bytesOther",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "bytesHtmlDoc"
+    "name": "bytesHtmlDoc",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "numDomains"
+    "name": "numDomains",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "maxDomainReqs"
+    "name": "maxDomainReqs",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "numRedirects"
+    "name": "numRedirects",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "numErrors"
+    "name": "numErrors",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "numGlibs"
+    "name": "numGlibs",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "numHttps"
+    "name": "numHttps",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "numCompressed"
+    "name": "numCompressed",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "numDomElements"
+    "name": "numDomElements",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "maxageNull"
+    "name": "maxageNull",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "maxage0"
+    "name": "maxage0",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "maxage1"
+    "name": "maxage1",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "maxage30"
+    "name": "maxage30",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "maxage365"
+    "name": "maxage365",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "maxageMore"
+    "name": "maxageMore",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "gzipTotal"
+    "name": "gzipTotal",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "gzipSavings"
+    "name": "gzipSavings",
+    "type": "INTEGER"
   },
   {
-    "type": "INTEGER",
-    "name": "_connections"
+    "name": "_connections",
+    "type": "INTEGER"
   },
   {
-    "type": "BOOLEAN",
-    "name": "_adult_site"
+    "name": "_adult_site",
+    "type": "BOOLEAN"
+  },
+  {
+    "name": "avg_dom_depth",
+    "type": "INTEGER"
+  },
+  {
+    "name": "document_height",
+    "type": "INTEGER"
+  },
+  {
+    "name": "document_width",
+    "type": "INTEGER"
+  },
+  {
+    "name": "localstorage_size",
+    "type": "INTEGER"
+  },
+  {
+    "name": "sessionstorage_size",
+    "type": "INTEGER"
+  },
+  {
+    "name": "num_iframes",
+    "type": "INTEGER"
+  },
+  {
+    "name": "num_scripts",
+    "type": "INTEGER"
+  },
+  {
+    "name": "doctype",
+    "type": "STRING"
+  },
+  {
+    "name": "meta_viewport",
+    "type": "STRING"
   }
 ]

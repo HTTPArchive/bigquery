@@ -100,6 +100,13 @@ CREATE TABLE `stats` (
   `renderStartccf5` varchar(32) DEFAULT NULL,
   `renderStartccv5` float unsigned DEFAULT NULL,
   `_connections` int(4) unsigned NOT NULL,
+  `avg_dom_depth` int(4) unsigned NOT NULL,
+  `document_height` int(10) unsigned NOT NULL,
+  `document_width` int(10) unsigned NOT NULL,
+  `localstorage_size` int(10) unsigned NOT NULL,
+  `sessionstorage_size` int(10) unsigned NOT NULL,
+  `num_iframes` int(8) unsigned NOT NULL,
+  `num_scripts` int(8) unsigned NOT NULL,
   PRIMARY KEY (`label`,`slice`,`device`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -167,10 +174,12 @@ CREATE TABLE `requests` (
   `resp_via` varchar(255) DEFAULT NULL,
   `resp_x_powered_by` varchar(255) DEFAULT NULL,
   `_cdn_provider` varchar(64) DEFAULT NULL,
+  `_gzip_save` int(10) unsigned NOT NULL,
+  `crawlid` int(10) unsigned NOT NULL,
   PRIMARY KEY (`requestid`),
   UNIQUE KEY `startedDateTime` (`startedDateTime`,`pageid`,`urlShort`),
   KEY `pageid` (`pageid`)
-) ENGINE=MyISAM AUTO_INCREMENT=1380813622 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=1437398796 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -244,10 +253,20 @@ CREATE TABLE `pages` (
   `gzipSavings` int(10) unsigned NOT NULL,
   `_connections` int(4) unsigned NOT NULL,
   `_adult_site` tinyint(1) NOT NULL,
+  `avg_dom_depth` int(4) unsigned NOT NULL,
+  `document_height` int(10) unsigned NOT NULL,
+  `document_width` int(10) unsigned NOT NULL,
+  `localstorage_size` int(10) unsigned NOT NULL,
+  `sessionstorage_size` int(10) unsigned NOT NULL,
+  `num_iframes` int(8) unsigned NOT NULL,
+  `num_scripts` int(8) unsigned NOT NULL,
+  `doctype` varchar(255) NOT NULL,
+  `meta_viewport` varchar(255) NOT NULL,
   PRIMARY KEY (`pageid`),
   UNIQUE KEY `label` (`label`,`urlShort`),
-  KEY `urlhash` (`urlhash`)
-) ENGINE=MyISAM AUTO_INCREMENT=16399092 DEFAULT CHARSET=latin1;
+  KEY `urlhash` (`urlhash`),
+  KEY `crawlid` (`crawlid`)
+) ENGINE=MyISAM AUTO_INCREMENT=17008664 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -313,10 +332,11 @@ CREATE TABLE `requestsmobile` (
   `resp_via` varchar(255) DEFAULT NULL,
   `resp_x_powered_by` varchar(255) DEFAULT NULL,
   `_cdn_provider` varchar(64) DEFAULT NULL,
+  `_gzip_save` int(10) unsigned NOT NULL,
   PRIMARY KEY (`requestid`),
   UNIQUE KEY `startedDateTime` (`startedDateTime`,`pageid`,`urlShort`),
   KEY `pageid` (`pageid`)
-) ENGINE=MyISAM AUTO_INCREMENT=15941581 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=16360655 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -390,9 +410,18 @@ CREATE TABLE `pagesmobile` (
   `gzipSavings` int(10) unsigned NOT NULL,
   `_connections` int(4) unsigned NOT NULL,
   `_adult_site` tinyint(1) NOT NULL,
+  `avg_dom_depth` int(4) unsigned NOT NULL,
+  `document_height` int(10) unsigned NOT NULL,
+  `document_width` int(10) unsigned NOT NULL,
+  `localstorage_size` int(10) unsigned NOT NULL,
+  `sessionstorage_size` int(10) unsigned NOT NULL,
+  `num_iframes` int(8) unsigned NOT NULL,
+  `num_scripts` int(8) unsigned NOT NULL,
+  `doctype` varchar(255) NOT NULL,
+  `meta_viewport` varchar(255) NOT NULL,
   PRIMARY KEY (`pageid`),
   UNIQUE KEY `label` (`label`,`urlShort`)
-) ENGINE=MyISAM AUTO_INCREMENT=285675 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=296858 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -423,7 +452,7 @@ CREATE TABLE `crawls` (
   `numRequests` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`crawlid`),
   KEY `label` (`label`,`archive`,`location`)
-) ENGINE=MyISAM AUTO_INCREMENT=220 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=235 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -455,4 +484,4 @@ CREATE TABLE `urls` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-05-19 10:18:51
+-- Dump completed on 2014-06-19 10:19:18
