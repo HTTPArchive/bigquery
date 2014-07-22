@@ -30,7 +30,7 @@ wget -nv -N "http://www.archive.org/download/httparchive_downloads_${adate}/http
 if [ ! -f processed/${archive}/pages.csv.gz ]; then
   echo -e "Converting pages data"
   gunzip -c "httparchive_${archive}_pages.csv.gz" \
-	| sed -e 's/\\N,/"",/g' -e 's/\\N$/""/g' -e 's/\\"/""/g' -e 's/\\"","/\\\\","/g' \
+	| sed -e 's/\\N,/"",/g' -e 's/^M//g' -e 's/\\N$/""/g' -e 's/\\"/""/g' -e 's/\\"","/\\\\","/g' \
 	| gzip > "processed/${archive}/pages.csv.gz"
 else
   echo -e "Pages data already converted, skipping."
