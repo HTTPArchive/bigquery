@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath com.httparchive.dataflow.BigQueryImport --project=httparchive --stagingLocation=job/staging --runner=DirectPipelineRunner --input=desktop-test</exec.args>
+                <exec.args>-classpath %classpath com.httparchive.dataflow.BigQueryImport --project=httparchive --stagingLocation=gs://httparchive/dataflow/staging --runner=DirectPipelineRunner --input=mobile-Apr_15_2015</exec.args>
                 <exec.executable>java</exec.executable>
                 <Env.PATH>/Users/igrigorik/google-cloud-sdk/bin:/usr/local/git/current/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin/g4bin:/usr/local/git/bin</Env.PATH>
             </properties>
@@ -25,7 +25,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath com.httparchive.dataflow.BigQueryImport --project=httparchive --stagingLocation=job/staging --runner=DirectPipelineRunner --input=desktop-test</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath com.httparchive.dataflow.BigQueryImport --project=httparchive --stagingLocation=gs://httparchive/dataflow/staging --runner=DirectPipelineRunner --input=mobile-Apr_15_2015</exec.args>
                 <exec.executable>java</exec.executable>
                 <Env.PATH>/Users/igrigorik/google-cloud-sdk/bin:/usr/local/git/current/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin/g4bin:/usr/local/git/bin</Env.PATH>
                 <jpda.listen>true</jpda.listen>
@@ -41,7 +41,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath com.httparchive.dataflow.BigQueryImport --project=httparchive --stagingLocation=job/staging --runner=DirectPipelineRunner --input=desktop-test</exec.args>
+                <exec.args>-classpath %classpath com.httparchive.dataflow.BigQueryImport --project=httparchive --stagingLocation=gs://httparchive/dataflow/staging --runner=DirectPipelineRunner --input=mobile-Apr_15_2015</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>

@@ -30,9 +30,12 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BigQueryImport {
 
+    private static final Logger LOG = LoggerFactory.getLogger(BigQueryImport.class);
     public static final TupleTag<TableRow> pagesTag = new TupleTag<TableRow>() {
     };
     public static final TupleTag<TableRow> entriesTag = new TupleTag<TableRow>() {
@@ -47,9 +50,14 @@ public class BigQueryImport {
         public void processElement(ProcessContext c) {
             try {
                 JsonNode har = c.element();
-
                 JsonNode data = har.get("log");
                 JsonNode pages = data.get("pages");
+
+                if (pages.size() == 0) {
+                    LOG.error("Empty HAR, skipping: {}", MAPPER.writeValueAsString(har));
+                    return;
+                }
+
                 JsonNode page = pages.get(0);
                 String pageUrl = page.get("_URL").textValue();
                 ObjectNode object = (ObjectNode) page;
@@ -73,7 +81,7 @@ public class BigQueryImport {
                 }
 
             } catch (IOException e) {
-                System.out.println("Failed to process har: " + e);
+                LOG.error("Failed to process HAR", e);
             }
         }
     }
