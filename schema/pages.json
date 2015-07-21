@@ -290,5 +290,53 @@
   {
     "name": "meta_viewport",
     "type": "STRING"
+  },
+  {
+    "name": "reqAudio",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqVideo",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqText",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqXml",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqWebp",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqSvg",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesAudio",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesVideo",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesText",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesXml",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesWebp",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesSvg",
+    "type": "INTEGER"
   }
 ]

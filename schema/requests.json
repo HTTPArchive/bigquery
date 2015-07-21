@@ -230,5 +230,17 @@
   {
     "name": "crawlid",
     "type": "INTEGER"
+  },
+  {
+    "name": "type",
+    "type": "STRING"
+  },
+  {
+    "name": "ext",
+    "type": "STRING"
+  },
+  {
+    "name": "format",
+    "type": "STRING"
   }
 ]
