@@ -46,6 +46,40 @@ public class BigQueryImport {
         private static final ObjectMapper MAPPER
                 = new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
+        // truncate content at ~1.9MB; row limit is 2MB.
+        private static final Integer maxContentSize = 1 * 1024 * 1024 - 100 * 1024;
+
+        public static String truncateUTF8(String s, int maxBytes) {
+            int b = 0;
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+
+                // ranges from http://en.wikipedia.org/wiki/UTF-8
+                int skip = 0;
+                int more;
+                if (c <= 0x007f) {
+                    more = 1;
+                } else if (c <= 0x07FF) {
+                    more = 2;
+                } else if (c <= 0xd7ff) {
+                    more = 3;
+                } else if (c <= 0xDFFF) {
+                    // surrogate area, consume next char as well
+                    more = 4;
+                    skip = 1;
+                } else {
+                    more = 3;
+                }
+
+                if (b + more > maxBytes) {
+                    return s.substring(0, i);
+                }
+                b += more;
+                i += skip;
+            }
+            return s;
+        }
+
         @Override
         public void processElement(ProcessContext c) {
             try {
@@ -70,9 +104,38 @@ public class BigQueryImport {
                 c.output(pageRow);
 
                 JsonNode entries = data.get("entries");
-                for (final JsonNode req : entries) {
-                    String resourceUrl = req.get("_full_url").textValue();
+                for (final JsonNode r : entries) {
+                    ObjectNode req = (ObjectNode) r;
+
+                    String resourceUrl;
+                    if (req.has("_full_url")) {
+                        resourceUrl = req.get("_full_url").textValue();
+                    } else if (req.has("url")) {
+                        resourceUrl = req.get("url").textValue();
+                    } else {
+                        resourceUrl = "";
+                    }
+
+                    ObjectNode resp = (ObjectNode) req.get("response");
+                    ObjectNode content = (ObjectNode) resp.get("content");
+
+                    if (content != null && content.has("text")) {
+                        String text = truncateUTF8(
+                                content.get("text").textValue(),
+                                maxContentSize);
+                        content.put("text", text);
+                        content.put("textTruncated", true);
+                    }
+
                     String reqJSON = MAPPER.writeValueAsString(req);
+                    Integer recordSize = reqJSON.getBytes("UTF-8").length;
+
+                    if (recordSize >= 2 * 1024 * 1024) {
+                        LOG.error("Row size is too large: {}, {}, {}",
+                                recordSize, pageUrl, resourceUrl);
+                        continue;
+                    }
+
                     TableRow request = new TableRow()
                             .set("page", pageUrl)
                             .set("url", resourceUrl)
@@ -91,12 +154,14 @@ public class BigQueryImport {
         @Description("GCS folder containing HAR files to read from")
         @Validation.Required
         String getInput();
+
         void setInput(String value);
 
         @Description("Dataset to write to: <project_id>:<dataset_id>")
         @Default.String("httparchive:har")
         @Validation.Required
         String getOutput();
+
         void setOutput(String value);
     }
 
@@ -124,7 +189,7 @@ public class BigQueryImport {
 
         DataflowPipelineOptions pipelineOptions
                 = options.as(DataflowPipelineOptions.class);
-        pipelineOptions.setNumWorkers(10);
+        pipelineOptions.setNumWorkers(20);
         pipelineOptions.setMaxNumWorkers(20);
         pipelineOptions.setAutoscalingAlgorithm(
                 DataflowPipelineWorkerPoolOptions.AutoscalingAlgorithmType.BASIC);
@@ -137,6 +202,7 @@ public class BigQueryImport {
                 .withCompressionType(TextIO.CompressionType.GZIP)
                 .withCoder(HarJsonCoder.of()))
                 .apply(ParDo
+                        .named("split-har")
                         .withOutputTags(
                                 BigQueryImport.pagesTag,
                                 TupleTagList.of(BigQueryImport.entriesTag))

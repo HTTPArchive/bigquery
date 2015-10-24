@@ -5,6 +5,7 @@
  */
 package com.httparchive.dataflow;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -58,15 +59,19 @@ public class HarJsonCoder extends AtomicCoder<JsonNode> {
     }
 
     private static final ObjectMapper MAPPER
-            = new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+            = new ObjectMapper()
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+            .configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
+            .configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
 
     private static final HarJsonCoder INSTANCE = new HarJsonCoder();
 
     /**
      * TableCell can hold arbitrary Object instances, which makes the encoding
      * non-deterministic.
+     *
+     * @return
      */
-    @Override
     @Deprecated
     public boolean isDeterministic() {
         return false;
