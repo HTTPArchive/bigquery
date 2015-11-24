@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.5.43, for debian-linux-gnu (x86_64)
+-- MySQL dump 10.13  Distrib 5.5.46, for debian-linux-gnu (x86_64)
 --
 -- Host: localhost    Database: httparchive
 -- ------------------------------------------------------
--- Server version	5.5.43-0ubuntu0.12.04.1-log
+-- Server version	5.5.46-0ubuntu0.12.04.2-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -119,6 +119,9 @@ CREATE TABLE `stats` (
   `bytesWebp` int(10) unsigned DEFAULT NULL,
   `reqSvg` float unsigned DEFAULT NULL,
   `bytesSvg` int(10) unsigned DEFAULT NULL,
+  `num_scripts_async` int(8) unsigned NOT NULL,
+  `num_scripts_sync` int(8) unsigned NOT NULL,
+  `usertiming` int(8) unsigned NOT NULL,
   PRIMARY KEY (`label`,`slice`,`device`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -194,7 +197,7 @@ CREATE TABLE `requests` (
   PRIMARY KEY (`requestid`),
   UNIQUE KEY `startedDateTime` (`startedDateTime`,`pageid`,`urlShort`),
   KEY `pageid` (`pageid`)
-) ENGINE=MyISAM AUTO_INCREMENT=2551278961 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=2994017306 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -289,11 +292,14 @@ CREATE TABLE `pages` (
   `bytesXml` int(10) unsigned NOT NULL,
   `bytesWebp` int(10) unsigned NOT NULL,
   `bytesSvg` int(10) unsigned NOT NULL,
+  `num_scripts_async` int(8) unsigned DEFAULT NULL,
+  `num_scripts_sync` int(8) unsigned DEFAULT NULL,
+  `usertiming` int(8) unsigned DEFAULT NULL,
   PRIMARY KEY (`pageid`),
   UNIQUE KEY `label` (`label`,`urlShort`),
   KEY `urlhash` (`urlhash`),
   KEY `crawlid` (`crawlid`)
-) ENGINE=MyISAM AUTO_INCREMENT=29076120 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=34081633 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -367,7 +373,7 @@ CREATE TABLE `requestsmobile` (
   PRIMARY KEY (`requestid`),
   UNIQUE KEY `startedDateTime` (`startedDateTime`,`pageid`,`urlShort`),
   KEY `pageid` (`pageid`)
-) ENGINE=MyISAM AUTO_INCREMENT=25524518 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=28629448 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -462,9 +468,12 @@ CREATE TABLE `pagesmobile` (
   `bytesXml` int(10) unsigned NOT NULL,
   `bytesWebp` int(10) unsigned NOT NULL,
   `bytesSvg` int(10) unsigned NOT NULL,
+  `num_scripts_async` int(8) unsigned DEFAULT NULL,
+  `num_scripts_sync` int(8) unsigned DEFAULT NULL,
+  `usertiming` int(8) unsigned DEFAULT NULL,
   PRIMARY KEY (`pageid`),
   UNIQUE KEY `label` (`label`,`urlShort`)
-) ENGINE=MyISAM AUTO_INCREMENT=429386 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=477992 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -495,7 +504,7 @@ CREATE TABLE `crawls` (
   `numRequests` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`crawlid`),
   KEY `label` (`label`,`archive`,`location`)
-) ENGINE=MyISAM AUTO_INCREMENT=337 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=374 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -527,4 +536,4 @@ CREATE TABLE `urls` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-07-10  4:50:51
+-- Dump completed on 2015-11-23 14:33:32

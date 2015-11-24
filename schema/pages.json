@@ -338,5 +338,17 @@
   {
     "name": "bytesSvg",
     "type": "INTEGER"
+  },
+  {
+    "name": "num_scripts_async",
+    "type": "INTEGER"
+  },
+  {
+    "name": "num_scripts_sync",
+    "type": "INTEGER"
+  },
+  {
+    "name": "usertiming",
+    "type": "INTEGER"
   }
 ]
