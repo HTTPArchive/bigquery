@@ -24,13 +24,15 @@ mkdir -p $DATA/processed/$archive
 echo -e "Downloading data for $archive"
 cd $DATA
 
-wget -nv -N "http://www.archive.org/download/httparchive_downloads_${adate}/httparchive_${archive}_pages.csv.gz"
+wget -nv -N "http://httparchive.org/downloads/httparchive_${archive}_pages.csv.gz"
+#wget -nv -N "http://www.archive.org/download/httparchive_downloads_${adate}/httparchive_${archive}_pages.csv.gz"
 if [ $? -ne 0 ]; then
   echo "Pages data for ${adate} is missing, exiting"
   exit
 fi
 
-wget -nv -N "http://www.archive.org/download/httparchive_downloads_${adate}/httparchive_${archive}_requests.csv.gz"
+wget -nv -N "http://httparchive.org/downloads/httparchive_${archive}_requests.csv.gz"
+#wget -nv -N "http://www.archive.org/download/httparchive_downloads_${adate}/httparchive_${archive}_requests.csv.gz"
 if [ $? -ne 0 ]; then
   echo "Request data for ${adate} is missing, exiting"
   exit
