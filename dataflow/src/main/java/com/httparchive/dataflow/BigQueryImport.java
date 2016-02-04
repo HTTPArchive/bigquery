@@ -41,6 +41,16 @@ public class BigQueryImport {
     public static final TupleTag<TableRow> entriesTag = new TupleTag<TableRow>() {
     };
 
+    private static class Response {
+      public String body;
+      public boolean truncated;
+
+      public Response(String b, boolean t) {
+        this.body = b;
+        this.truncated = t;
+      }
+    }
+
     static class DataExtractorFn extends DoFn<JsonNode, TableRow> {
 
         private static final ObjectMapper MAPPER
@@ -49,7 +59,7 @@ public class BigQueryImport {
         // truncate content at ~1.9MB; row limit is 2MB.
         private static final Integer maxContentSize = 1 * 1024 * 1024 - 100 * 1024;
 
-        public static String truncateUTF8(String s, int maxBytes) {
+        public static Response truncateUTF8(String s, int maxBytes) {
             int b = 0;
             for (int i = 0; i < s.length(); i++) {
                 char c = s.charAt(i);
@@ -72,12 +82,12 @@ public class BigQueryImport {
                 }
 
                 if (b + more > maxBytes) {
-                    return s.substring(0, i);
+                    return new Response(s.substring(0, i), true);
                 }
                 b += more;
                 i += skip;
             }
-            return s;
+            return new Response(s, false);
         }
 
         @Override
@@ -120,11 +130,11 @@ public class BigQueryImport {
                     ObjectNode content = (ObjectNode) resp.get("content");
 
                     if (content != null && content.has("text")) {
-                        String text = truncateUTF8(
+                        Response text = truncateUTF8(
                                 content.get("text").textValue(),
                                 maxContentSize);
-                        content.put("text", text);
-                        content.put("textTruncated", true);
+                        content.put("text", text.body);
+                        content.put("textTruncated", text.truncated);
                     }
 
                     String reqJSON = MAPPER.writeValueAsString(req);
