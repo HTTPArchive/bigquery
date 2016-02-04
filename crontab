@@ -1,4 +1,7 @@
-0 15 10 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync.sh `date +"%b_1_%Y"`'  >> /var/log/HAimport.log 2>&1
-0 15 25 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync.sh `date +"%b_15_%Y"`' >> /var/log/HAimport.log 2>&1
-0  8 10 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync.sh mobile_`date +"%b_1_%Y"`'  >> /var/log/HAimport.log 2>&1
-0  8 25 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync.sh mobile_`date +"%b_15_%Y"`' >> /var/log/HAimport.log 2>&1
+0 15 13 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh `date +\%b_1_\%Y`'  >> /var/log/HAimport.log 2>&1
+0 15 28 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh `date +\%b_15_\%Y`' >> /var/log/HAimport.log 2>&1
+0  8 13 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh mobile_`date +\%b_1_\%Y`'  >> /var/log/HAimport.log 2>&1
+0  8 28 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh mobile_`date +\%b_15_\%Y`' >> /var/log/HAimport.log 2>&1
+
+0 10 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_har.sh chrome >> /var/log/HA-import-har-chrome.log 2>&1
+0 11 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_har.sh android >> /var/log/HA-import-har-android.log 2>&1
