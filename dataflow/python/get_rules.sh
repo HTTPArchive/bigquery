@@ -1,14 +1,14 @@
 #!/bin/bash
 
 if [ ! -f easyprivacy.txt ]; then
-  wget https://easylist-downloads.adblockplus.org/easyprivacy.txt -O local/tracker.txt
+  wget --no-check-certificate https://easylist-downloads.adblockplus.org/easyprivacy.txt -O local/tracker.txt
 fi
 
 if [ ! -f easylist_noelemhide.txt ]; then
-  wget https://easylist-downloads.adblockplus.org/easylist_noelemhide.txt -O local/ads.txt
+  wget --no-check-certificate https://easylist-downloads.adblockplus.org/easylist_noelemhide.txt -O local/ad.txt
 fi
 
 if [ ! -f fanboy-annoyance.txt ]; then
-  wget https://easylist-downloads.adblockplus.org/fanboy-annoyance.txt -O local/social.txt
+  wget --no-check-certificate https://easylist-downloads.adblockplus.org/fanboy-annoyance.txt -O local/social.txt
 fi
 
