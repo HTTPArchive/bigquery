@@ -15,7 +15,7 @@
         <dependency>
             <groupId>com.google.cloud.dataflow</groupId>
                 <artifactId>google-cloud-dataflow-java-sdk-all</artifactId>
-            <version>LATEST</version>
+            <version>1.4.0</version>
         </dependency>
     </dependencies>
 </project>
