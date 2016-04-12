@@ -41,7 +41,7 @@ fi
 if [ ! -f processed/${archive}/pages.csv.gz ]; then
   echo -e "Converting pages data"
   gunzip -c "httparchive_${archive}_pages.csv.gz" \
-//g' -e 's/\\N$/""/g' -e's/\([^\]\)\\"/\1""/g' -e's/\([^\]\)\\"/\1""/g' -e 's/\\"","/\\\\","/g' \
+  | sed -e 's/\\N,/"",/g' -e 's/\\N$/""/g' -e's/\([^\]\)\\"/\1""/g' -e's/\([^\]\)\\"/\1""/g' -e 's/\\"","/\\\\","/g' \
   | gzip > "processed/${archive}/pages.csv.gz"
 else
   echo -e "Pages data already converted, skipping."
@@ -74,20 +74,21 @@ else
   nosync=""
 fi
 
-echo -e "Submitting new pages import (${ptable}) to BigQuery"
+echo -e "Submitting new pages import ${ptable} to BigQuery"
 bq --nosync load $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
 
 first=1
 for f in `ls -r requests_*`; do
   if [[ $first == 1 ]]; then
-    echo "Submitting new requests import (${rtable}) to BigQuery: $f"
+    echo "Submitting new requests import ${rtable} to BigQuery: $f"
     bq $nosync load $rtable gs://httparchive/${archive}/$f $BASE/schema/requests.json
     first=0
   else
-    echo "Submitting append requests import (${rtable}) to BigQuery: $f"
+    echo "Submitting append requests import ${rtable} to BigQuery: $f"
     bq --nosync load $rtable gs://httparchive/${archive}/$f
   fi
 done
 
 cd $BASE
 echo "Done"
+
