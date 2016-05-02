@@ -43,6 +43,8 @@ public class BigQueryImport {
     };
     public static final TupleTag<TableRow> entriesTag = new TupleTag<TableRow>() {
     };
+    public static final TupleTag<TableRow> bodiesTag = new TupleTag<TableRow>() {
+    };
 
     private static class Response {
 
@@ -135,21 +137,18 @@ public class BigQueryImport {
 
                     if (content != null && content.has("text")) {
                         Response text = truncateUTF8(
-                                content.get("text").textValue(),
+                                content.remove("text").textValue(),
                                 maxContentSize);
-                        content.put("text", text.body);
-                        content.put("textTruncated", text.truncated);
+
+                        TableRow body = new TableRow()
+                                .set("page", pageUrl)
+                                .set("url", resourceUrl)
+                                .set("body", text.body)
+                                .set("truncated", text.truncated);
+                        c.sideOutput(bodiesTag, body);
                     }
 
                     String reqJSON = MAPPER.writeValueAsString(req);
-                    Integer recordSize = reqJSON.getBytes("UTF-8").length;
-
-                    if (recordSize >= 2 * 1024 * 1024) {
-                        LOG.error("Row size is too large: {}, {}, {}",
-                                recordSize, pageUrl, resourceUrl);
-                        continue;
-                    }
-
                     TableRow request = new TableRow()
                             .set("page", pageUrl)
                             .set("url", resourceUrl)
@@ -234,7 +233,8 @@ public class BigQueryImport {
                         .named("split-har")
                         .withOutputTags(
                                 BigQueryImport.pagesTag,
-                                TupleTagList.of(BigQueryImport.entriesTag))
+                                TupleTagList.of(BigQueryImport.entriesTag)
+                                .and(BigQueryImport.bodiesTag))
                         .of(new DataExtractorFn())
                 );
 
@@ -267,6 +267,25 @@ public class BigQueryImport {
                 .named("write-entries")
                 .to(getBigQueryOutput(options, "requests"))
                 .withSchema(reqSchema)
+                .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
+                .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
+
+        List<TableFieldSchema> body = new ArrayList<>();
+        body.add(new TableFieldSchema().setName("page").setType("STRING")
+                .setDescription("URL of the parent document"));
+        body.add(new TableFieldSchema().setName("url").setType("STRING")
+                .setDescription("URL of the subresource"));
+        body.add(new TableFieldSchema().setName("body").setType("STRING")
+                .setDescription("Body of the response"));
+        body.add(new TableFieldSchema().setName("truncated").setType("BOOLEAN")
+                .setDescription("Flag is true if body is >2MB"));
+        TableSchema bodySchema = new TableSchema().setFields(body);
+
+        PCollection<TableRow> bodies = results.get(BigQueryImport.bodiesTag);
+        bodies.apply(BigQueryIO.Write
+                .named("write-bodies")
+                .to(getBigQueryOutput(options, "bodies"))
+                .withSchema(bodySchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
 
