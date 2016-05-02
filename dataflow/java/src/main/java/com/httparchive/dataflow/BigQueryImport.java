@@ -27,8 +27,11 @@ import com.google.cloud.dataflow.sdk.values.PCollectionTuple;
 import com.google.cloud.dataflow.sdk.values.TupleTag;
 import com.google.cloud.dataflow.sdk.values.TupleTagList;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +45,14 @@ public class BigQueryImport {
     };
 
     private static class Response {
-      public String body;
-      public boolean truncated;
 
-      public Response(String b, boolean t) {
-        this.body = b;
-        this.truncated = t;
-      }
+        public String body;
+        public boolean truncated;
+
+        public Response(String b, boolean t) {
+            this.body = b;
+            this.truncated = t;
+        }
     }
 
     static class DataExtractorFn extends DoFn<JsonNode, TableRow> {
@@ -185,12 +189,27 @@ public class BigQueryImport {
     }
 
     // <project>:<dataset>.<table>
-    // Input: mobile-Nov_15_2014
-    // Output: httparchive:har.mobile_nov_15_2014
+    // Input: chrome-Nov_15_2014
+    // Output: httparchive:har.2014_11_15_chrome_(trailer)
     private static String getBigQueryOutput(Options options, String trailer) {
-        return options.getOutput() + "."
-                + options.getInput().replaceFirst("-", "_").toLowerCase()
-                + "_" + trailer;
+        String[] parts = options.getInput().split("-");
+        String type = parts[0];
+        String date = parts[1];
+
+        SimpleDateFormat inputFormatter = new SimpleDateFormat("MMM_dd_yyyy");
+        SimpleDateFormat outputFormatter = new SimpleDateFormat("yyyy_MM_dd");
+
+        try {
+            Date parsedDate = inputFormatter.parse(date);
+            date = outputFormatter.format(parsedDate);
+        } catch (ParseException e) {
+            LOG.error("Failed to parse table date", e);
+        }
+
+        return options.getOutput() + "." // har.
+                + date + "_" // 2014_11_15_
+                + type + "_" // chrome_
+                + trailer; // pages/requests/...
     }
 
     public static void main(String[] args) {
