@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.cloud.dataflow.sdk.options.DataflowPipelineOptions;
 import com.google.cloud.dataflow.sdk.options.DataflowPipelineWorkerPoolOptions;
+import com.google.cloud.dataflow.sdk.transforms.Aggregator;
+import com.google.cloud.dataflow.sdk.transforms.Sum;
 import com.google.cloud.dataflow.sdk.util.gcsfs.GcsPath;
 import com.google.cloud.dataflow.sdk.values.PCollectionTuple;
 import com.google.cloud.dataflow.sdk.values.TupleTag;
@@ -39,11 +41,11 @@ import org.slf4j.LoggerFactory;
 public class BigQueryImport {
 
     private static final Logger LOG = LoggerFactory.getLogger(BigQueryImport.class);
-    public static final TupleTag<TableRow> pagesTag = new TupleTag<TableRow>() {
+    public static final TupleTag<TableRow> PAGES_TAG = new TupleTag<TableRow>() {
     };
-    public static final TupleTag<TableRow> entriesTag = new TupleTag<TableRow>() {
+    public static final TupleTag<TableRow> ENTRIES_TAG = new TupleTag<TableRow>() {
     };
-    public static final TupleTag<TableRow> bodiesTag = new TupleTag<TableRow>() {
+    public static final TupleTag<TableRow> BODIES_TAG = new TupleTag<TableRow>() {
     };
 
     private static class Response {
@@ -59,11 +61,23 @@ public class BigQueryImport {
 
     static class DataExtractorFn extends DoFn<JsonNode, TableRow> {
 
+        private static final Logger LOG
+                = LoggerFactory.getLogger(DataExtractorFn.class);
+
         private static final ObjectMapper MAPPER
                 = new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
+        private final Aggregator<Long, Long> withBody
+                = createAggregator("withBody", new Sum.SumLongFn());
+
+        private final Aggregator<Long, Long> truncatedBody
+                = createAggregator("truncatedBody", new Sum.SumLongFn());
+
+        private final Aggregator<Long, Long> skippedBody
+                = createAggregator("skippedBody", new Sum.SumLongFn());
+
         // truncate content at ~1.9MB; row limit is 2MB.
-        private static final Integer maxContentSize = 1 * 1024 * 1024 - 100 * 1024;
+        private static final Integer MAX_CONTENT_SIZE = 2 * 1024 * 1024;
 
         public static Response truncateUTF8(String s, int maxBytes) {
             int b = 0;
@@ -85,6 +99,28 @@ public class BigQueryImport {
                     skip = 1;
                 } else {
                     more = 3;
+                }
+
+                // Account for JSON escaping. Adapted from:
+                // http://stackoverflow.com/a/16652683/510112
+                switch (c) {
+                    case '\\':
+                    case '"':
+                    case '/':
+                        more += 2;
+                        break;
+                    case '\b':
+                    case '\t':
+                    case '\n':
+                    case '\f':
+                    case '\r':
+                        more += 1;
+                        break;
+                    default:
+                        if (c < ' ') {
+                            String t = "000" + Integer.toHexString(c);
+                            more += 3 + t.length();
+                        }
                 }
 
                 if (b + more > maxBytes) {
@@ -121,7 +157,7 @@ public class BigQueryImport {
 
                 JsonNode entries = data.get("entries");
                 for (final JsonNode r : entries) {
-                    ObjectNode req = (ObjectNode) r;
+                    ObjectNode req = (ObjectNode) r.deepCopy();
 
                     String resourceUrl;
                     if (req.has("_full_url")) {
@@ -136,16 +172,39 @@ public class BigQueryImport {
                     ObjectNode content = (ObjectNode) resp.get("content");
 
                     if (content != null && content.has("text")) {
-                        Response text = truncateUTF8(
-                                content.remove("text").textValue(),
-                                maxContentSize);
+                        withBody.addValue(1L);
+
+                        JsonNode text = content.remove("text");
+                        int maxSize = MAX_CONTENT_SIZE
+                                - pageUrl.getBytes("UTF-8").length
+                                - resourceUrl.getBytes("UTF-8").length
+                                - 128;
+
+                        Response rsp = truncateUTF8(text.textValue(), maxSize);
+                        if (rsp.truncated) {
+                            truncatedBody.addValue(1L);
+                            LOG.warn("Truncated response: {} {}",
+                                    resourceUrl, pageJSON);
+                        }
 
                         TableRow body = new TableRow()
                                 .set("page", pageUrl)
                                 .set("url", resourceUrl)
-                                .set("body", text.body)
-                                .set("truncated", text.truncated);
-                        c.sideOutput(bodiesTag, body);
+                                .set("body", rsp.body)
+                                .set("truncated", rsp.truncated);
+
+                        String bodyJSON = MAPPER.writeValueAsString(body);
+                        Integer recordSize = bodyJSON.getBytes("UTF-8").length;
+
+                        if (recordSize > MAX_CONTENT_SIZE) {
+                            skippedBody.addValue(1L);
+                            LOG.error("Body too large, skipping: {} {} {} {}",
+                                    recordSize, pageUrl,
+                                    resourceUrl, pageJSON);
+                            continue;
+                        } else {
+                            c.sideOutput(BODIES_TAG, body);
+                        }
                     }
 
                     String reqJSON = MAPPER.writeValueAsString(req);
@@ -153,7 +212,7 @@ public class BigQueryImport {
                             .set("page", pageUrl)
                             .set("url", resourceUrl)
                             .set("payload", reqJSON);
-                    c.sideOutput(entriesTag, request);
+                    c.sideOutput(ENTRIES_TAG, request);
                 }
 
             } catch (IOException e) {
@@ -220,7 +279,7 @@ public class BigQueryImport {
         pipelineOptions.setNumWorkers(20);
         pipelineOptions.setMaxNumWorkers(20);
         pipelineOptions.setAutoscalingAlgorithm(
-                DataflowPipelineWorkerPoolOptions.AutoscalingAlgorithmType.BASIC);
+                DataflowPipelineWorkerPoolOptions.AutoscalingAlgorithmType.NONE);
 
         Pipeline p = Pipeline.create(pipelineOptions);
 
@@ -232,9 +291,9 @@ public class BigQueryImport {
                 .apply(ParDo
                         .named("split-har")
                         .withOutputTags(
-                                BigQueryImport.pagesTag,
-                                TupleTagList.of(BigQueryImport.entriesTag)
-                                .and(BigQueryImport.bodiesTag))
+                                BigQueryImport.PAGES_TAG,
+                                TupleTagList.of(BigQueryImport.ENTRIES_TAG)
+                                .and(BigQueryImport.BODIES_TAG))
                         .of(new DataExtractorFn())
                 );
 
@@ -245,7 +304,7 @@ public class BigQueryImport {
                 .setDescription("JSON-encoded parent document HAR data"));
         TableSchema pageSchema = new TableSchema().setFields(page);
 
-        PCollection<TableRow> pages = results.get(BigQueryImport.pagesTag);
+        PCollection<TableRow> pages = results.get(BigQueryImport.PAGES_TAG);
         pages.apply(BigQueryIO.Write
                 .named("write-pages")
                 .to(getBigQueryOutput(options, "pages"))
@@ -262,7 +321,7 @@ public class BigQueryImport {
                 .setDescription("JSON-encoded subresource HAR data"));
         TableSchema reqSchema = new TableSchema().setFields(request);
 
-        PCollection<TableRow> entries = results.get(BigQueryImport.entriesTag);
+        PCollection<TableRow> entries = results.get(BigQueryImport.ENTRIES_TAG);
         entries.apply(BigQueryIO.Write
                 .named("write-entries")
                 .to(getBigQueryOutput(options, "requests"))
@@ -281,10 +340,10 @@ public class BigQueryImport {
                 .setDescription("Flag is true if body is >2MB"));
         TableSchema bodySchema = new TableSchema().setFields(body);
 
-        PCollection<TableRow> bodies = results.get(BigQueryImport.bodiesTag);
+        PCollection<TableRow> bodies = results.get(BigQueryImport.BODIES_TAG);
         bodies.apply(BigQueryIO.Write
                 .named("write-bodies")
-                .to(getBigQueryOutput(options, "bodies"))
+                .to(getBigQueryOutput(options, "requests_bodies"))
                 .withSchema(bodySchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
