@@ -1,0 +1,9 @@
+[
+  {"name": "alexa_domain", "type": "STRING"},
+  {"name": "alexa_rank", "type": "INTEGER"},
+  {"name": "dmoz_topic", "type": "STRING", "mode":"REPEATED"},
+  {"name": "dmoz_url", "type": "STRING"},
+  {"name": "dmoz_title", "type": "STRING"},
+  {"name": "dmoz_description", "type": "STRING"}
+]
+

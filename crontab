@@ -1,3 +1,6 @@
+0 10 1   * * /bin/bash -l -c 'cd /home/igrigorik/code/urls && ./run.sh >> /var/log/HA-urls.log 2>&1
+0 10 15  * * /bin/bash -l -c 'cd /home/igrigorik/code/urls && ./run.sh >> /var/log/HA-urls.log 2>&1
+
 0 15 13 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh `date +\%b_1_\%Y`'  >> /var/log/HAimport.log 2>&1
 0 15 28 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh `date +\%b_15_\%Y`' >> /var/log/HAimport.log 2>&1
 0  8 13 * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh mobile_`date +\%b_1_\%Y`'  >> /var/log/HAimport.log 2>&1
