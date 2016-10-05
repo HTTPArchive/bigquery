@@ -55,7 +55,7 @@ fi
 mvn compile exec:java -Dexec.mainClass=com.httparchive.dataflow.BigQueryImport \
   -Dexec.args="--project=httparchive --stagingLocation=gs://httparchive/dataflow/staging \
                --runner=DataflowPipelineRunner --input=${bucket} \
-               --workerMachineType=n1-standard-4"
+               --workerMachineType=n1-highmem-4"
 
 echo "Job started, exiting."
 

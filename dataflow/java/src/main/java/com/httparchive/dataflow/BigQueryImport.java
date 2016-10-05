@@ -145,9 +145,15 @@ public class BigQueryImport {
                 }
 
                 JsonNode page = pages.get(0);
-                String pageUrl = page.get("_URL").textValue();
-                ObjectNode object = (ObjectNode) page;
+                String pageUrl;
+                if (page.has("_URL")) {
+                    pageUrl = page.get("_URL").textValue();
+                } else {
+                    LOG.error("Missing _URL, skipping: {}", MAPPER.writeValueAsString(har));
+                    return;
+                }
 
+                ObjectNode object = (ObjectNode) page;
                 String pageJSON = MAPPER.writeValueAsString(object);
 
                 TableRow pageRow = new TableRow()
