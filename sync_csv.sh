@@ -21,21 +21,27 @@ fi
 
 mkdir -p $DATA/processed/$archive
 
-echo -e "Downloading data for $archive"
 cd $DATA
 
-wget -nv -N "http://httparchive.org/downloads/httparchive_${archive}_pages.csv.gz"
-#wget -nv -N "http://www.archive.org/download/httparchive_downloads_${adate}/httparchive_${archive}_pages.csv.gz"
-if [ $? -ne 0 ]; then
-  echo "Pages data for ${adate} is missing, exiting"
-  exit
+if [ ! -f httparchive_${archive}_pages.csv.gz ]; then
+  echo -e "Downloading data for $archive"
+  wget -nv -N "http://httparchive.org/downloads/httparchive_${archive}_pages.csv.gz"
+  if [ $? -ne 0 ]; then
+    echo "Pages data for ${adate} is missing, exiting"
+    exit
+  fi
+else
+  echo -e "Pages data already downloaded for $archive, skipping."
 fi
 
-wget -nv -N "http://httparchive.org/downloads/httparchive_${archive}_requests.csv.gz"
-#wget -nv -N "http://www.archive.org/download/httparchive_downloads_${adate}/httparchive_${archive}_requests.csv.gz"
-if [ $? -ne 0 ]; then
-  echo "Request data for ${adate} is missing, exiting"
-  exit
+if [ ! -f httparchive_${archive}_requests.csv.gz ]; then
+  wget -nv -N "http://httparchive.org/downloads/httparchive_${archive}_requests.csv.gz"
+  if [ $? -ne 0 ]; then
+    echo "Request data for ${adate} is missing, exiting"
+    exit
+  fi
+else
+  echo -e "Request data already downloaded for $archive, skipping."
 fi
 
 if [ ! -f processed/${archive}/pages.csv.gz ]; then
@@ -68,26 +74,23 @@ gsutil cp -n * gs://httparchive/${archive}/
 if [[ $mobile == 1 ]]; then
   ptable="${ptable}_mobile"
   rtable="${rtable}_mobile"
-  #nosync="--nosync"
-  nosync=""
-else
-  nosync=""
 fi
 
-echo -e "Submitting new pages import ${ptable} to BigQuery"
-bq --nosync load $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
+bq show httparchive:${ptable} &> /dev/null
+if [ $? -ne 0 ]; then
+  echo -e "Submitting new pages import ${ptable} to BigQuery"
+  bq --nosync load $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
+else
+  echo -e "${ptable} already exists, skipping."
+fi
 
-first=1
-for f in `ls -r requests_*`; do
-  if [[ $first == 1 ]]; then
-    echo "Submitting new requests import ${rtable} to BigQuery: $f"
-    bq $nosync load $rtable gs://httparchive/${archive}/$f $BASE/schema/requests.json
-    first=0
-  else
-    echo "Submitting append requests import ${rtable} to BigQuery: $f"
-    bq --nosync load $rtable gs://httparchive/${archive}/$f
-  fi
-done
+bq show httparchive:${rtable} &> /dev/null
+if [ $? -ne 0 ]; then
+  echo -e "Submitting new requests import ${rtable} to BigQuery"
+  bq load $rtable gs://httparchive/${archive}/requests_* $BASE/schema/requests.json
+else
+  echo -e "${rtable} already exists, skipping."
+fi
 
 cd $BASE
 echo "Done"
