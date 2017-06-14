@@ -138,6 +138,7 @@ public class BigQueryImport {
                 JsonNode har = c.element();
                 JsonNode data = har.get("log");
                 JsonNode pages = data.get("pages");
+                JsonNode lighthouse = har.get("_lighthouse");
 
                 if (pages.size() == 0) {
                     LOG.error("Empty HAR, skipping: {}", MAPPER.writeValueAsString(har));
@@ -156,9 +157,13 @@ public class BigQueryImport {
                 ObjectNode object = (ObjectNode) page;
                 String pageJSON = MAPPER.writeValueAsString(object);
 
+                object = (ObjectNode) lighthouse;
+                String lighthouseJSON = MAPPER.writeValueAsString(object);
+
                 TableRow pageRow = new TableRow()
                         .set("url", pageUrl)
-                        .set("payload", pageJSON);
+                        .set("payload", pageJSON)
+                        .set("lighthouse", lighthouseJSON);
                 c.output(pageRow);
 
                 JsonNode entries = data.get("entries");
@@ -308,6 +313,8 @@ public class BigQueryImport {
                 .setDescription("URL of the parent document"));
         page.add(new TableFieldSchema().setName("payload").setType("STRING")
                 .setDescription("JSON-encoded parent document HAR data"));
+        page.add(new TableFieldSchema().setName("lighthouse").setType("STRING")
+                .setDescription("JSON-encoded Lighthouse results"));
         TableSchema pageSchema = new TableSchema().setFields(page);
 
         PCollection<TableRow> pages = results.get(BigQueryImport.PAGES_TAG);
