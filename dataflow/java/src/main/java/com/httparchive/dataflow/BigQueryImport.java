@@ -13,7 +13,11 @@ import com.google.cloud.dataflow.sdk.options.PipelineOptionsFactory;
 import com.google.cloud.dataflow.sdk.options.Validation;
 import com.google.cloud.dataflow.sdk.transforms.Create;
 import com.google.cloud.dataflow.sdk.transforms.DoFn;
+import com.google.cloud.dataflow.sdk.transforms.Flatten;
 import com.google.cloud.dataflow.sdk.transforms.ParDo;
+import com.google.cloud.dataflow.sdk.transforms.SerializableFunction;
+import com.google.cloud.dataflow.sdk.transforms.Values;
+import com.google.cloud.dataflow.sdk.transforms.WithKeys;
 import com.google.cloud.dataflow.sdk.values.PCollection;
 import com.google.cloud.dataflow.sdk.io.BigQueryIO;
 
@@ -316,11 +320,18 @@ public class BigQueryImport {
 
         Pipeline p = Pipeline.create(pipelineOptions);
         PCollectionTuple results = p
-                .apply(Create.of(getHarBucket(options)))
-                .apply(ParDo
-                        .named("expand-glob")
-                        .of(new ExpandGlobFn()))
-                .apply(Reshuffle.of())
+                .apply(Create.<GcsPath>of(getHarBucket(options)))
+                .apply(ParDo.named("expand-glob").of(new ExpandGlobFn()))
+                .apply(Flatten.<GcsPath>iterables())
+                .apply(WithKeys.of(
+                        new SerializableFunction<GcsPath, Integer>() {
+                            @Override
+                            public Integer apply(GcsPath path) {
+                                return path.hashCode();
+                            }
+                        }))
+                .apply(Reshuffle.<Integer, GcsPath>of())
+                .apply(Values.<GcsPath>create())
                 .apply(ParDo
                         .named("split-har")
                         .withOutputTags(
