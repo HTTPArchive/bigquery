@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd $HOME/code/dataflow
+cd $HOME/code/dataflow/java
 BASE=`pwd`
 
 if [ -n "$2" ]; then
