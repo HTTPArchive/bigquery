@@ -73,11 +73,14 @@ public class BigQueryImport {
         private final Aggregator<Long, Long> truncatedBody
                 = createAggregator("truncatedBody", new Sum.SumLongFn());
 
+        private final Aggregator<Long, Long> skippedLighthouse
+                = createAggregator("skippedLighthouse", new Sum.SumLongFn());
+
         private final Aggregator<Long, Long> skippedBody
                 = createAggregator("skippedBody", new Sum.SumLongFn());
 
-        // truncate content at ~1.9MB; row limit is 2MB.
-        private static final Integer MAX_CONTENT_SIZE = 2 * 1024 * 1024;
+        // truncate content at ~9.9MB; row limit is 10MB.
+        private static final Integer MAX_CONTENT_SIZE = 10 * 1024 * 1024;
 
         public static Response truncateUTF8(String s, int maxBytes) {
             int b = 0;
@@ -159,11 +162,21 @@ public class BigQueryImport {
 
                 object = (ObjectNode) lighthouse;
                 String lighthouseJSON = MAPPER.writeValueAsString(object);
+                Boolean skipLH = lighthouseJSON.getBytes("UTF-8").length >=
+                        MAX_CONTENT_SIZE - pageJSON.getBytes("UTF-8").length;
+                
+                if (skipLH) {
+                    LOG.error("Lighthouse too large, skipping: {} {} {}",
+                            pageUrl, pageJSON, lighthouseJSON);
+                    skippedLighthouse.addValue(1L);
+                    lighthouseJSON = null;
+                }
 
                 TableRow pageRow = new TableRow()
                         .set("url", pageUrl)
                         .set("payload", pageJSON)
-                        .set("lighthouse", lighthouseJSON);
+                        .set("lighthouse", lighthouseJSON)
+                        .set("skipLH", skipLH);
                 c.output(pageRow);
 
                 JsonNode entries = data.get("entries");
@@ -315,6 +328,8 @@ public class BigQueryImport {
                 .setDescription("JSON-encoded parent document HAR data"));
         page.add(new TableFieldSchema().setName("lighthouse").setType("STRING")
                 .setDescription("JSON-encoded Lighthouse results"));
+        page.add(new TableFieldSchema().setName("skipLH").setType("BOOLEAN")
+                .setDescription("Flag is true if Lighthouse report exceeds size limit"));
         TableSchema pageSchema = new TableSchema().setFields(page);
 
         PCollection<TableRow> pages = results.get(BigQueryImport.PAGES_TAG);
@@ -350,7 +365,7 @@ public class BigQueryImport {
         body.add(new TableFieldSchema().setName("body").setType("STRING")
                 .setDescription("Body of the response"));
         body.add(new TableFieldSchema().setName("truncated").setType("BOOLEAN")
-                .setDescription("Flag is true if body is >2MB"));
+                .setDescription("Flag is true if body is >10MB"));
         TableSchema bodySchema = new TableSchema().setFields(body);
 
         PCollection<TableRow> bodies = results.get(BigQueryImport.BODIES_TAG);
