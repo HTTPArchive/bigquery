@@ -73,6 +73,9 @@ public class BigQueryImport {
         private final Aggregator<Long, Long> truncatedBody
                 = createAggregator("truncatedBody", new Sum.SumLongFn());
 
+        private final Aggregator<Long, Long> skippedLighthouse
+                = createAggregator("skippedLighthouse", new Sum.SumLongFn());
+
         private final Aggregator<Long, Long> skippedBody
                 = createAggregator("skippedBody", new Sum.SumLongFn());
 
@@ -164,7 +167,14 @@ public class BigQueryImport {
                         .set("url", pageUrl)
                         .set("payload", pageJSON)
                         .set("lighthouse", lighthouseJSON);
-                c.output(pageRow);
+
+                String pageRowJSON = MAPPER.writeValueAsString(pageRow);
+                Integer pageRowSize = pageRowJSON.getBytes("UTF-8").length;
+                if (pageRowSize > MAX_CONTENT_SIZE) {
+                    skippedLighthouse.addValue(1L);
+                } else {
+                    c.output(pageRow);
+                }
 
                 JsonNode entries = data.get("entries");
                 for (final JsonNode r : entries) {
