@@ -1,22 +1,26 @@
 #!/bin/bash
 
-cd $HOME/code/dataflow
+cd $HOME/code/dataflow/java
 BASE=`pwd`
 
 if [ -n "$2" ]; then
   day=$(date -d $2 +%d)
+  MM=$(date -d $2 +%m)
   month=$(date -d $2 +%b)
   year=$(date -d $2 +%Y)
 else
   day=$(date +%d)
+  MM=$(date -d +%m)
   month=$(date +%b)
   year=$(date +%Y)
 fi
 
 if [ $day -ge 15 ]; then
   import_date=$(date +"${month}_15_${year}")
+  table="${year}_${MM}_15"
 else
   import_date=$(date +"${month}_1_${year}")
+  table="${year}_${MM}_01"
 fi
 
 if [ -n "$1" ]; then
@@ -24,9 +28,11 @@ if [ -n "$1" ]; then
   if [[ $1 == *chrome* ]]; then
     mobile=0
     bucket="chrome-${import_date}"
+    table="${table}_chrome"
   else
     mobile=1
     bucket="android-${import_date}"
+    table="${table}_android"
   fi
   echo "Processing $bucket, mobile: $mobile"
 
@@ -36,8 +42,6 @@ else
   exit
 fi
 
-table=${bucket,,}
-table=${table/-/_}
 if bq show "httparchive:har.${table}_pages"; then
   echo "Table already exists in BigQuery, exiting"
   exit 1
