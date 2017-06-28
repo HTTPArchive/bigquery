@@ -160,6 +160,14 @@ public class BigQueryImport {
                 ObjectNode object = (ObjectNode) page;
                 String pageJSON = MAPPER.writeValueAsString(object);
 
+                // `audits` is redundant and can be omitted.
+                if (lighthouse != null) {
+                    for (JsonNode category : lighthouse.get("reportCategories")) {
+                        object = (ObjectNode) category;
+                        object.remove("audits");
+                    }
+                }
+
                 object = (ObjectNode) lighthouse;
                 String lighthouseJSON = MAPPER.writeValueAsString(object);
 
