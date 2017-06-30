@@ -47,6 +47,8 @@ public class BigQueryImport {
     };
     public static final TupleTag<TableRow> BODIES_TAG = new TupleTag<TableRow>() {
     };
+    public static final TupleTag<TableRow> LIGHTHOUSE_TAG = new TupleTag<TableRow>() {
+    };
 
     private static class Response {
 
@@ -160,28 +162,40 @@ public class BigQueryImport {
                 ObjectNode object = (ObjectNode) page;
                 String pageJSON = MAPPER.writeValueAsString(object);
 
-                // `audits` is redundant and can be omitted.
+                TableRow pageRow = new TableRow()
+                        .set("url", pageUrl)
+                        .set("payload", pageJSON);
+                c.output(pageRow);
+
                 if (lighthouse != null) {
+                    // `audits` is redundant and can be omitted.
                     for (JsonNode category : lighthouse.get("reportCategories")) {
                         object = (ObjectNode) category;
                         object.remove("audits");
                     }
+                    // Omit image data.
+                    object = (ObjectNode) lighthouse.get("audits").get("screenshot-thumbnails");
+                    if (object != null) {
+                        object = (ObjectNode) object.get("details");
+                        if (object != null) {
+                            object.remove("items");
+                        }
+                    }
                 }
 
                 object = (ObjectNode) lighthouse;
-                String lighthouseJSON = MAPPER.writeValueAsString(object);
+                String lighthouseJSON = lighthouse == null ? null : MAPPER.writeValueAsString(object);
 
-                TableRow pageRow = new TableRow()
+                TableRow lighthouseRow = new TableRow()
                         .set("url", pageUrl)
-                        .set("payload", pageJSON)
-                        .set("lighthouse", lighthouseJSON);
+                        .set("report", lighthouseJSON);
 
-                String pageRowJSON = MAPPER.writeValueAsString(pageRow);
-                Integer pageRowSize = pageRowJSON.getBytes("UTF-8").length;
-                if (pageRowSize > MAX_CONTENT_SIZE) {
+                String lighthouseRowJSON = MAPPER.writeValueAsString(lighthouseRow);
+                Integer lighthouseRowSize = lighthouseRowJSON.getBytes("UTF-8").length;
+                if (lighthouseRowSize > MAX_CONTENT_SIZE) {
                     skippedLighthouse.addValue(1L);
                 } else {
-                    c.output(pageRow);
+                    c.sideOutput(LIGHTHOUSE_TAG, lighthouseRow);
                 }
 
                 JsonNode entries = data.get("entries");
@@ -322,7 +336,8 @@ public class BigQueryImport {
                         .withOutputTags(
                                 BigQueryImport.PAGES_TAG,
                                 TupleTagList.of(BigQueryImport.ENTRIES_TAG)
-                                .and(BigQueryImport.BODIES_TAG))
+                                .and(BigQueryImport.BODIES_TAG)
+                                .and(BigQueryImport.LIGHTHOUSE_TAG))
                         .of(new DataExtractorFn())
                 );
 
@@ -331,8 +346,6 @@ public class BigQueryImport {
                 .setDescription("URL of the parent document"));
         page.add(new TableFieldSchema().setName("payload").setType("STRING")
                 .setDescription("JSON-encoded parent document HAR data"));
-        page.add(new TableFieldSchema().setName("lighthouse").setType("STRING")
-                .setDescription("JSON-encoded Lighthouse results"));
         TableSchema pageSchema = new TableSchema().setFields(page);
 
         PCollection<TableRow> pages = results.get(BigQueryImport.PAGES_TAG);
@@ -376,6 +389,21 @@ public class BigQueryImport {
                 .named("write-bodies")
                 .to(getBigQueryOutput(options, "requests_bodies"))
                 .withSchema(bodySchema)
+                .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
+                .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
+
+        List<TableFieldSchema> lhReport = new ArrayList<>();
+        lhReport.add(new TableFieldSchema().setName("url").setType("STRING")
+                .setDescription("URL of the parent document"));
+        lhReport.add(new TableFieldSchema().setName("report").setType("STRING")
+                .setDescription("JSON-encoded Lighthouse report"));
+        TableSchema lhReportSchema = new TableSchema().setFields(lhReport);
+
+        PCollection<TableRow> lhReports = results.get(BigQueryImport.LIGHTHOUSE_TAG);
+        lhReports.apply(BigQueryIO.Write
+                .named("write-lighthouse")
+                .to(getBigQueryOutput(options, "lighthouse"))
+                .withSchema(lhReportSchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
 
