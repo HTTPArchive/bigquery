@@ -36,6 +36,8 @@ import com.google.cloud.dataflow.sdk.values.PCollectionTuple;
 import com.google.cloud.dataflow.sdk.values.TupleTag;
 import com.google.cloud.dataflow.sdk.values.TupleTagList;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
@@ -138,16 +140,31 @@ public class BigQueryImport {
             }
             return new Response(s, false);
         }
+        
+        public byte[] unzipGcsFile(GcsPath zipFile, GcsUtil gcsUtil) throws IOException {
+            SeekableByteChannel seekableByteChannel = gcsUtil.open(zipFile);
+            ByteBuffer fileContent = ByteBuffer.allocate(Long.valueOf(gcsUtil.fileSize(zipFile)).intValue());
+            seekableByteChannel.read(fileContent);
+            return fileContent.array();
+        }
+        
+        public JsonNode decodeHar(GcsPath harFile, GcsUtil gcsUtil) throws IOException {
+            try {
+                byte[] harBytes = unzipGcsFile(harFile, gcsUtil);
+                return MAPPER.readTree(harBytes);
+            } catch (IOException e) {
+                System.out.println("Failed to decode HAR: " + e);
+                throw e;
+            }
+        }
 
         @Override
         public void processElement(ProcessContext c) {
             try {
-                //JsonNode har = c.element();
                 GcsPath harFile = c.element();
-                // Unzip har.
-                //ZipInputStream
-                // Convert to JsonNode.
-                JsonNode har = (JsonNode) harFile;
+                GcsUtilFactory factory = new GcsUtilFactory();
+                GcsUtil gcsUtil = factory.create(c.getPipelineOptions());
+                JsonNode har = decodeHar(harFile, gcsUtil);
                 JsonNode data = har.get("log");
                 JsonNode pages = data.get("pages");
 
