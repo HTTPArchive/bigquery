@@ -35,8 +35,11 @@ import com.google.cloud.dataflow.sdk.util.gcsfs.GcsPath;
 import com.google.cloud.dataflow.sdk.values.PCollectionTuple;
 import com.google.cloud.dataflow.sdk.values.TupleTag;
 import com.google.cloud.dataflow.sdk.values.TupleTagList;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -44,6 +47,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,15 +148,29 @@ public class BigQueryImport {
         }
         
         public byte[] unzipGcsFile(GcsPath zipFile, GcsUtil gcsUtil) throws IOException {
+            byte[] buffer = new byte[MAX_CONTENT_SIZE];
             SeekableByteChannel seekableByteChannel = gcsUtil.open(zipFile);
-            ByteBuffer fileContent = ByteBuffer.allocate(Long.valueOf(gcsUtil.fileSize(zipFile)).intValue());
-            seekableByteChannel.read(fileContent);
-            return fileContent.array();
+            InputStream inputStream = Channels.newInputStream(seekableByteChannel);
+            ZipInputStream zipInputStream = new ZipInputStream(inputStream);
+            
+            try {
+                ZipEntry entry;
+                while ((entry = zipInputStream.getNextEntry()) != null) {
+                    int len = 0;
+                    while ((len = zipInputStream.read(buffer)) > 0) {}
+                    zipInputStream.closeEntry();
+                }
+            } finally {
+                zipInputStream.close();
+            }
+            
+            return buffer;
         }
         
         public JsonNode decodeHar(GcsPath harFile, GcsUtil gcsUtil) throws IOException {
             try {
                 byte[] harBytes = unzipGcsFile(harFile, gcsUtil);
+                System.out.println("Har Bytes:" + harBytes.toString());
                 return MAPPER.readTree(harBytes);
             } catch (IOException e) {
                 System.out.println("Failed to decode HAR: " + e);
