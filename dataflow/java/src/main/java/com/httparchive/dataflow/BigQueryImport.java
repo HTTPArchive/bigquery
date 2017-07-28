@@ -88,7 +88,10 @@ public class BigQueryImport {
         
         private final Aggregator<Long, Long> truncatedBody
                 = createAggregator("truncatedBody", new Sum.SumLongFn());
-        
+
+        private final Aggregator<Long, Long> skippedLighthouse
+                = createAggregator("skippedLighthouse", new Sum.SumLongFn());
+
         private final Aggregator<Long, Long> skippedBody
                 = createAggregator("skippedBody", new Sum.SumLongFn());
 
@@ -187,7 +190,8 @@ public class BigQueryImport {
                 JsonNode har = decodeHar(harFile, gcsUtil);
                 JsonNode data = har.get("log");
                 JsonNode pages = data.get("pages");
-                
+                JsonNode lighthouse = har.get("_lighthouse");
+
                 if (pages.size() == 0) {
                     LOG.error("Empty HAR, skipping: {}", MAPPER.writeValueAsString(har));
                     return;
@@ -204,12 +208,23 @@ public class BigQueryImport {
                 
                 ObjectNode object = (ObjectNode) page;
                 String pageJSON = MAPPER.writeValueAsString(object);
-                
+
+                object = (ObjectNode) lighthouse;
+                String lighthouseJSON = MAPPER.writeValueAsString(object);
+
                 TableRow pageRow = new TableRow()
                         .set("url", pageUrl)
-                        .set("payload", pageJSON);
-                c.output(pageRow);
-                
+                        .set("payload", pageJSON)
+                        .set("lighthouse", lighthouseJSON);
+
+                String pageRowJSON = MAPPER.writeValueAsString(pageRow);
+                Integer pageRowSize = pageRowJSON.getBytes("UTF-8").length;
+                if (pageRowSize > MAX_CONTENT_SIZE) {
+                    skippedLighthouse.addValue(1L);
+                } else {
+                    c.output(pageRow);
+                }
+
                 JsonNode entries = data.get("entries");
                 for (final JsonNode r : entries) {
                     ObjectNode req = (ObjectNode) r.deepCopy();
@@ -382,6 +397,8 @@ public class BigQueryImport {
                 .setDescription("URL of the parent document"));
         page.add(new TableFieldSchema().setName("payload").setType("STRING")
                 .setDescription("JSON-encoded parent document HAR data"));
+        page.add(new TableFieldSchema().setName("lighthouse").setType("STRING")
+                .setDescription("JSON-encoded Lighthouse results"));
         TableSchema pageSchema = new TableSchema().setFields(page);
         
         PCollection<TableRow> pages = results.get(BigQueryImport.PAGES_TAG);
