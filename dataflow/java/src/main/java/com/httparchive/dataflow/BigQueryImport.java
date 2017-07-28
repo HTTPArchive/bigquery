@@ -55,7 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BigQueryImport {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(BigQueryImport.class);
     public static final TupleTag<TableRow> PAGES_TAG = new TupleTag<TableRow>() {
     };
@@ -67,27 +67,27 @@ public class BigQueryImport {
     };
 
     private static class Response {
-        
+
         public String body;
         public boolean truncated;
-        
+
         public Response(String b, boolean t) {
             this.body = b;
             this.truncated = t;
         }
     }
-    
+
     static class DataExtractorFn extends DoFn<GcsPath, TableRow> {
-        
+
         private static final Logger LOG
                 = LoggerFactory.getLogger(DataExtractorFn.class);
-        
+
         private static final ObjectMapper MAPPER
                 = new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-        
+
         private final Aggregator<Long, Long> withBody
                 = createAggregator("withBody", new Sum.SumLongFn());
-        
+
         private final Aggregator<Long, Long> truncatedBody
                 = createAggregator("truncatedBody", new Sum.SumLongFn());
 
@@ -99,7 +99,7 @@ public class BigQueryImport {
 
         // truncate content at ~1.9MB; row limit is 2MB.
         private static final Integer MAX_CONTENT_SIZE = 2 * 1024 * 1024;
-        
+
         public static Response truncateUTF8(String s, int maxBytes) {
             int b = 0;
             for (int i = 0; i < s.length(); i++) {
@@ -143,7 +143,7 @@ public class BigQueryImport {
                             more += 3 + t.length();
                         }
                 }
-                
+
                 if (b + more > maxBytes) {
                     return new Response(s.substring(0, i), true);
                 }
@@ -152,14 +152,15 @@ public class BigQueryImport {
             }
             return new Response(s, false);
         }
-        
+
         public byte[] unzipGcsFile(GcsPath zipFile, GcsUtil gcsUtil) throws IOException {
+            // TODO (rviscomi): Investigate effects of using a larger buffer size on pipeline speed.
             byte[] buffer = new byte[1024];
             SeekableByteChannel seekableByteChannel = gcsUtil.open(zipFile);
             InputStream inputStream = Channels.newInputStream(seekableByteChannel);
             GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            
+
             try {
                 int len = 0;
                 while ((len = gzipInputStream.read(buffer)) > 0) {
@@ -169,10 +170,10 @@ public class BigQueryImport {
                 gzipInputStream.close();
                 outputStream.close();
             }
-            
+
             return outputStream.toByteArray();
         }
-        
+
         public JsonNode decodeHar(GcsPath harFile, GcsUtil gcsUtil) throws IOException {
             try {
                 byte[] harBytes = unzipGcsFile(harFile, gcsUtil);
@@ -182,7 +183,7 @@ public class BigQueryImport {
                 throw e;
             }
         }
-        
+
         @Override
         public void processElement(ProcessContext c) {
             try {
@@ -198,7 +199,7 @@ public class BigQueryImport {
                     LOG.error("Empty HAR, skipping: {}", MAPPER.writeValueAsString(har));
                     return;
                 }
-                
+
                 JsonNode page = pages.get(0);
                 String pageUrl;
                 if (page.has("_URL")) {
@@ -207,7 +208,7 @@ public class BigQueryImport {
                     LOG.error("Missing _URL, skipping: {}", MAPPER.writeValueAsString(har));
                     return;
                 }
-                
+
                 ObjectNode object = (ObjectNode) page;
                 String pageJSON = MAPPER.writeValueAsString(object);
 
@@ -250,7 +251,7 @@ public class BigQueryImport {
                 JsonNode entries = data.get("entries");
                 for (final JsonNode r : entries) {
                     ObjectNode req = (ObjectNode) r.deepCopy();
-                    
+
                     String resourceUrl;
                     if (req.has("_full_url")) {
                         resourceUrl = req.get("_full_url").textValue();
@@ -259,35 +260,35 @@ public class BigQueryImport {
                     } else {
                         resourceUrl = "";
                     }
-                    
+
                     ObjectNode resp = (ObjectNode) req.get("response");
                     ObjectNode content = (ObjectNode) resp.get("content");
-                    
+
                     if (content != null && content.has("text")) {
                         withBody.addValue(1L);
-                        
+
                         JsonNode text = content.remove("text");
                         int maxSize = MAX_CONTENT_SIZE
                                 - pageUrl.getBytes("UTF-8").length
                                 - resourceUrl.getBytes("UTF-8").length
                                 - 128;
-                        
+
                         Response rsp = truncateUTF8(text.textValue(), maxSize);
                         if (rsp.truncated) {
                             truncatedBody.addValue(1L);
                             LOG.warn("Truncated response: {} {}",
                                     resourceUrl, pageJSON);
                         }
-                        
+
                         TableRow body = new TableRow()
                                 .set("page", pageUrl)
                                 .set("url", resourceUrl)
                                 .set("body", rsp.body)
                                 .set("truncated", rsp.truncated);
-                        
+
                         String bodyJSON = MAPPER.writeValueAsString(body);
                         Integer recordSize = bodyJSON.getBytes("UTF-8").length;
-                        
+
                         if (recordSize > MAX_CONTENT_SIZE) {
                             skippedBody.addValue(1L);
                             LOG.error("Body too large, skipping: {} {} {} {}",
@@ -298,7 +299,7 @@ public class BigQueryImport {
                             c.sideOutput(BODIES_TAG, body);
                         }
                     }
-                    
+
                     String reqJSON = MAPPER.writeValueAsString(req);
                     TableRow request = new TableRow()
                             .set("page", pageUrl)
@@ -306,18 +307,18 @@ public class BigQueryImport {
                             .set("payload", reqJSON);
                     c.sideOutput(ENTRIES_TAG, request);
                 }
-                
+
             } catch (IOException e) {
                 LOG.error("Failed to process HAR", e);
             }
         }
     }
-    
+
     static class ExpandGlobFn extends DoFn<GcsPath, List<GcsPath>> {
-        
+
         private static final Logger LOG
                 = LoggerFactory.getLogger(ExpandGlobFn.class);
-        
+
         @Override
         public void processElement(ProcessContext c) {
             GcsUtilFactory factory = new GcsUtilFactory();
@@ -330,22 +331,22 @@ public class BigQueryImport {
                 LOG.error("Failed to expand GCS har glob", e);
             }
         }
-        
+
     }
-    
+
     public static interface Options extends PipelineOptions {
-        
+
         @Description("GCS folder containing HAR files to read from")
         @Validation.Required
         String getInput();
-        
+
         void setInput(String value);
-        
+
         @Description("Dataset to write to: <project_id>:<dataset_id>")
         @Default.String("httparchive:har")
         @Validation.Required
         String getOutput();
-        
+
         void setOutput(String value);
     }
 
@@ -364,34 +365,34 @@ public class BigQueryImport {
         String[] parts = options.getInput().split("-");
         String type = parts[0];
         String date = parts[1];
-        
+
         SimpleDateFormat inputFormatter = new SimpleDateFormat("MMM_dd_yyyy");
         SimpleDateFormat outputFormatter = new SimpleDateFormat("yyyy_MM_dd");
-        
+
         try {
             Date parsedDate = inputFormatter.parse(date);
             date = outputFormatter.format(parsedDate);
         } catch (ParseException e) {
             LOG.error("Failed to parse table date", e);
         }
-        
+
         return options.getOutput() + "." // har.
                 + date + "_" // 2014_11_15_
                 + type + "_" // chrome_
                 + trailer; // pages/requests/...
     }
-    
+
     public static void main(String[] args) {
         Options options = PipelineOptionsFactory.fromArgs(args)
                 .withValidation().as(Options.class);
-        
+
         DataflowPipelineOptions pipelineOptions
                 = options.as(DataflowPipelineOptions.class);
         pipelineOptions.setNumWorkers(20);
         pipelineOptions.setMaxNumWorkers(20);
         pipelineOptions.setAutoscalingAlgorithm(
                 DataflowPipelineWorkerPoolOptions.AutoscalingAlgorithmType.NONE);
-        
+
         Pipeline p = Pipeline.create(pipelineOptions);
         PCollectionTuple results = p
                 .apply(Create.<GcsPath>of(getHarBucket(options)).withCoder(GcsPathCoder.of()))
@@ -422,7 +423,7 @@ public class BigQueryImport {
         page.add(new TableFieldSchema().setName("payload").setType("STRING")
                 .setDescription("JSON-encoded parent document HAR data"));
         TableSchema pageSchema = new TableSchema().setFields(page);
-        
+
         PCollection<TableRow> pages = results.get(BigQueryImport.PAGES_TAG);
         pages.apply(BigQueryIO.Write
                 .named("write-pages")
@@ -430,7 +431,7 @@ public class BigQueryImport {
                 .withSchema(pageSchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
-        
+
         List<TableFieldSchema> request = new ArrayList<>();
         request.add(new TableFieldSchema().setName("page").setType("STRING")
                 .setDescription("URL of the parent document"));
@@ -439,7 +440,7 @@ public class BigQueryImport {
         request.add(new TableFieldSchema().setName("payload").setType("STRING")
                 .setDescription("JSON-encoded subresource HAR data"));
         TableSchema reqSchema = new TableSchema().setFields(request);
-        
+
         PCollection<TableRow> entries = results.get(BigQueryImport.ENTRIES_TAG);
         entries.apply(BigQueryIO.Write
                 .named("write-entries")
@@ -447,7 +448,7 @@ public class BigQueryImport {
                 .withSchema(reqSchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
-        
+
         List<TableFieldSchema> body = new ArrayList<>();
         body.add(new TableFieldSchema().setName("page").setType("STRING")
                 .setDescription("URL of the parent document"));
@@ -458,7 +459,7 @@ public class BigQueryImport {
         body.add(new TableFieldSchema().setName("truncated").setType("BOOLEAN")
                 .setDescription("Flag is true if body is >2MB"));
         TableSchema bodySchema = new TableSchema().setFields(body);
-        
+
         PCollection<TableRow> bodies = results.get(BigQueryImport.BODIES_TAG);
         bodies.apply(BigQueryIO.Write
                 .named("write-bodies")
