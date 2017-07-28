@@ -191,7 +191,7 @@ public class BigQueryImport {
                         .set("report", lighthouseJSON);
 
                 String lighthouseRowJSON = MAPPER.writeValueAsString(lighthouseRow);
-                Integer lighthouseRowSize = lighthouseRowJSON.getBytes("UTF-8").length;
+                Integer lighthouseRowSize = lighthouseRowJSON.getBytes("UTF-8").length + pageUrl.getBytes("UTF-8").length;
                 if (lighthouseRowSize > MAX_CONTENT_SIZE) {
                     skippedLighthouse.addValue(1L);
                 } else {
