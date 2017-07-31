@@ -5,66 +5,47 @@
  */
 package com.httparchive.dataflow;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.cloud.dataflow.sdk.coders.AtomicCoder;
 import com.google.cloud.dataflow.sdk.coders.Coder.Context;
 import com.google.cloud.dataflow.sdk.coders.StringUtf8Coder;
+import com.google.cloud.dataflow.sdk.util.gcsfs.GcsPath;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-/**
- *
- * @author igrigorik
- */
-public class HarJsonCoder extends AtomicCoder<JsonNode> {
+public class GcsPathCoder extends AtomicCoder<GcsPath> {
 
-    public static HarJsonCoder of() {
+    public static GcsPathCoder of() {
         return INSTANCE;
     }
 
     @Override
-    public void encode(JsonNode value, OutputStream outStream, Context context)
+    public void encode(GcsPath value, OutputStream outStream, Context context)
             throws IOException {
-        String strValue = MAPPER.writeValueAsString(value);
+        String strValue = value.toResourceName();
         StringUtf8Coder.of().encode(strValue, outStream, context);
     }
 
-    public JsonNode decode(ByteBuffer in) throws IOException {
-        try {
-            return MAPPER.readTree(in.toString());
-        } catch (IOException e) {
-            System.out.println("Failed to decode HAR: " + e);
-            System.out.println(in);
-            throw e;
-        }
+    public GcsPath decode(ByteBuffer in) {
+        return GcsPath.fromResourceName(in.toString());
     }
 
     @Override
-    public JsonNode decode(InputStream inStream, Context context) throws IOException {
+    public GcsPath decode(InputStream inStream, Context context) throws IOException {
         try {
             String strValue = StringUtf8Coder.of().decode(inStream, context);
-            return MAPPER.readTree(strValue);
+            return GcsPath.fromResourceName(strValue);
         } catch (IOException e) {
-            System.out.println("Failed to decode HAR: " + e);
+            System.out.println("Failed to decode GcsPath: " + e);
             System.out.println(inStream);
             System.out.println(context);
             throw e;
         }
     }
 
-    private static final ObjectMapper MAPPER
-            = new ObjectMapper()
-            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-            .configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
-            .configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
-
-    private static final HarJsonCoder INSTANCE = new HarJsonCoder();
+    private static final GcsPathCoder INSTANCE = new GcsPathCoder();
 
     /**
      * TableCell can hold arbitrary Object instances, which makes the encoding

@@ -6,14 +6,18 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
 
 import com.google.cloud.dataflow.sdk.Pipeline;
-import com.google.cloud.dataflow.sdk.io.TextIO;
 import com.google.cloud.dataflow.sdk.options.Default;
 import com.google.cloud.dataflow.sdk.options.Description;
 import com.google.cloud.dataflow.sdk.options.PipelineOptions;
 import com.google.cloud.dataflow.sdk.options.PipelineOptionsFactory;
 import com.google.cloud.dataflow.sdk.options.Validation;
+import com.google.cloud.dataflow.sdk.transforms.Create;
 import com.google.cloud.dataflow.sdk.transforms.DoFn;
+import com.google.cloud.dataflow.sdk.transforms.Flatten;
 import com.google.cloud.dataflow.sdk.transforms.ParDo;
+import com.google.cloud.dataflow.sdk.transforms.SerializableFunction;
+import com.google.cloud.dataflow.sdk.transforms.Values;
+import com.google.cloud.dataflow.sdk.transforms.WithKeys;
 import com.google.cloud.dataflow.sdk.values.PCollection;
 import com.google.cloud.dataflow.sdk.io.BigQueryIO;
 
@@ -24,17 +28,29 @@ import com.google.cloud.dataflow.sdk.options.DataflowPipelineOptions;
 import com.google.cloud.dataflow.sdk.options.DataflowPipelineWorkerPoolOptions;
 import com.google.cloud.dataflow.sdk.transforms.Aggregator;
 import com.google.cloud.dataflow.sdk.transforms.Sum;
+import com.google.cloud.dataflow.sdk.util.GcsUtil;
+import com.google.cloud.dataflow.sdk.util.GcsUtil.GcsUtilFactory;
+import com.google.cloud.dataflow.sdk.util.Reshuffle;
 import com.google.cloud.dataflow.sdk.util.gcsfs.GcsPath;
 import com.google.cloud.dataflow.sdk.values.PCollectionTuple;
 import com.google.cloud.dataflow.sdk.values.TupleTag;
 import com.google.cloud.dataflow.sdk.values.TupleTagList;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.SeekableByteChannel;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.GZIPInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +77,7 @@ public class BigQueryImport {
         }
     }
 
-    static class DataExtractorFn extends DoFn<JsonNode, TableRow> {
+    static class DataExtractorFn extends DoFn<GcsPath, TableRow> {
 
         private static final Logger LOG
                 = LoggerFactory.getLogger(DataExtractorFn.class);
@@ -137,10 +153,44 @@ public class BigQueryImport {
             return new Response(s, false);
         }
 
+        public byte[] unzipGcsFile(GcsPath zipFile, GcsUtil gcsUtil) throws IOException {
+            // TODO (rviscomi): Investigate effects of using a larger buffer size on pipeline speed.
+            byte[] buffer = new byte[1024];
+            SeekableByteChannel seekableByteChannel = gcsUtil.open(zipFile);
+            InputStream inputStream = Channels.newInputStream(seekableByteChannel);
+            GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            try {
+                int len = 0;
+                while ((len = gzipInputStream.read(buffer)) > 0) {
+                    outputStream.write(buffer, 0, len);
+                }
+            } finally {
+                gzipInputStream.close();
+                outputStream.close();
+            }
+
+            return outputStream.toByteArray();
+        }
+
+        public JsonNode decodeHar(GcsPath harFile, GcsUtil gcsUtil) throws IOException {
+            try {
+                byte[] harBytes = unzipGcsFile(harFile, gcsUtil);
+                return MAPPER.readTree(harBytes);
+            } catch (IOException e) {
+                LOG.error("Failed to decode HAR: {}, {}", e, harFile.toString());
+                throw e;
+            }
+        }
+
         @Override
         public void processElement(ProcessContext c) {
             try {
-                JsonNode har = c.element();
+                GcsPath harFile = c.element();
+                GcsUtilFactory factory = new GcsUtilFactory();
+                GcsUtil gcsUtil = factory.create(c.getPipelineOptions());
+                JsonNode har = decodeHar(harFile, gcsUtil);
                 JsonNode data = har.get("log");
                 JsonNode pages = data.get("pages");
                 JsonNode lighthouse = har.get("_lighthouse");
@@ -264,6 +314,26 @@ public class BigQueryImport {
         }
     }
 
+    static class ExpandGlobFn extends DoFn<GcsPath, List<GcsPath>> {
+
+        private static final Logger LOG
+                = LoggerFactory.getLogger(ExpandGlobFn.class);
+
+        @Override
+        public void processElement(ProcessContext c) {
+            GcsUtilFactory factory = new GcsUtilFactory();
+            GcsUtil gcsUtil = factory.create(c.getPipelineOptions());
+            GcsPath harGlob = c.element();
+            try {
+                List<GcsPath> harFiles = gcsUtil.expand(harGlob);
+                c.output(harFiles);
+            } catch (IOException e) {
+                LOG.error("Failed to expand GCS har glob", e);
+            }
+        }
+
+    }
+
     public static interface Options extends PipelineOptions {
 
         @Description("GCS folder containing HAR files to read from")
@@ -282,11 +352,10 @@ public class BigQueryImport {
 
     // Input: mobile-Nov_15_2014
     // Output: gs://httparchive/mobile_nov_15_2014/*.har.gz
-    private static String getHarBucket(Options options) {
+    private static GcsPath getHarBucket(Options options) {
         return GcsPath.fromUri("gs://httparchive/")
                 .resolve(options.getInput() + "/")
-                .resolve("*.har.gz")
-                .toString();
+                .resolve("*.har.gz");
     }
 
     // <project>:<dataset>.<table>
@@ -325,12 +394,19 @@ public class BigQueryImport {
                 DataflowPipelineWorkerPoolOptions.AutoscalingAlgorithmType.NONE);
 
         Pipeline p = Pipeline.create(pipelineOptions);
-
-        PCollectionTuple results = p.apply(TextIO.Read
-                .named("read-har")
-                .from(getHarBucket(options))
-                .withCompressionType(TextIO.CompressionType.GZIP)
-                .withCoder(HarJsonCoder.of()))
+        PCollectionTuple results = p
+                .apply(Create.<GcsPath>of(getHarBucket(options)).withCoder(GcsPathCoder.of()))
+                .apply(ParDo.named("expand-glob").of(new ExpandGlobFn()))
+                .apply(Flatten.<GcsPath>iterables())
+                .apply(WithKeys.of(
+                        new SerializableFunction<GcsPath, Integer>() {
+                    @Override
+                    public Integer apply(GcsPath path) {
+                        return path.hashCode();
+                    }
+                }))
+                .apply(Reshuffle.<Integer, GcsPath>of())
+                .apply(Values.<GcsPath>create())
                 .apply(ParDo
                         .named("split-har")
                         .withOutputTags(
