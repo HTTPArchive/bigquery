@@ -5,6 +5,7 @@ import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
 
+import com.google.cloud.dataflow.sdk.coders.CoderRegistry;
 import com.google.cloud.dataflow.sdk.Pipeline;
 import com.google.cloud.dataflow.sdk.options.Default;
 import com.google.cloud.dataflow.sdk.options.Description;
@@ -48,9 +49,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipException;
-import java.util.zip.GZIPInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +75,7 @@ public class BigQueryImport {
         }
     }
 
-    static class DataExtractorFn extends DoFn<GcsPath, TableRow> {
+    static class DataExtractorFn extends DoFn<JsonNode, TableRow> {
 
         private static final Logger LOG
                 = LoggerFactory.getLogger(DataExtractorFn.class);
@@ -153,44 +151,10 @@ public class BigQueryImport {
             return new Response(s, false);
         }
 
-        public byte[] unzipGcsFile(GcsPath zipFile, GcsUtil gcsUtil) throws IOException {
-            // TODO (rviscomi): Investigate effects of using a larger buffer size on pipeline speed.
-            byte[] buffer = new byte[1024];
-            SeekableByteChannel seekableByteChannel = gcsUtil.open(zipFile);
-            InputStream inputStream = Channels.newInputStream(seekableByteChannel);
-            GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-            try {
-                int len = 0;
-                while ((len = gzipInputStream.read(buffer)) > 0) {
-                    outputStream.write(buffer, 0, len);
-                }
-            } finally {
-                gzipInputStream.close();
-                outputStream.close();
-            }
-
-            return outputStream.toByteArray();
-        }
-
-        public JsonNode decodeHar(GcsPath harFile, GcsUtil gcsUtil) throws IOException {
-            try {
-                byte[] harBytes = unzipGcsFile(harFile, gcsUtil);
-                return MAPPER.readTree(harBytes);
-            } catch (IOException e) {
-                LOG.error("Failed to decode HAR: {}, {}", e, harFile.toString());
-                throw e;
-            }
-        }
-
         @Override
         public void processElement(ProcessContext c) {
             try {
-                GcsPath harFile = c.element();
-                GcsUtilFactory factory = new GcsUtilFactory();
-                GcsUtil gcsUtil = factory.create(c.getPipelineOptions());
-                JsonNode har = decodeHar(harFile, gcsUtil);
+                JsonNode har = c.element();
                 JsonNode data = har.get("log");
                 JsonNode pages = data.get("pages");
                 JsonNode lighthouse = har.get("_lighthouse");
@@ -394,6 +358,10 @@ public class BigQueryImport {
                 DataflowPipelineWorkerPoolOptions.AutoscalingAlgorithmType.NONE);
 
         Pipeline p = Pipeline.create(pipelineOptions);
+
+        CoderRegistry cr = p.getCoderRegistry();
+        cr.registerCoder(JsonNode.class, HarJsonCoder.class);
+
         PCollectionTuple results = p
                 .apply(Create.<GcsPath>of(getHarBucket(options)).withCoder(GcsPathCoder.of()))
                 .apply(ParDo.named("expand-glob").of(new ExpandGlobFn()))
@@ -407,6 +375,8 @@ public class BigQueryImport {
                 }))
                 .apply(Reshuffle.<Integer, GcsPath>of())
                 .apply(Values.<GcsPath>create())
+                .apply(ParDo.named("unzip-har").of(new UnzipHarFn()))
+                .apply(ParDo.named("annotate-har").of(new AnnotateFn()))
                 .apply(ParDo
                         .named("split-har")
                         .withOutputTags(
