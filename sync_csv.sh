@@ -79,7 +79,7 @@ fi
 bq show httparchive:${ptable} &> /dev/null
 if [ $? -ne 0 ]; then
   echo -e "Submitting new pages import ${ptable} to BigQuery"
-  bq --nosync load $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
+  bq load --replace $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
 else
   echo -e "${ptable} already exists, skipping."
 fi
@@ -87,7 +87,7 @@ fi
 bq show httparchive:${rtable} &> /dev/null
 if [ $? -ne 0 ]; then
   echo -e "Submitting new requests import ${rtable} to BigQuery"
-  bq load $rtable gs://httparchive/${archive}/requests_* $BASE/schema/requests.json
+  bq load --replace $rtable gs://httparchive/${archive}/requests_* $BASE/schema/requests.json
 else
   echo -e "${rtable} already exists, skipping."
 fi
