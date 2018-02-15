@@ -358,12 +358,11 @@ public class BigQueryImport {
                 .resolve("*.har.gz");
     }
 
-    // <project>:<dataset>.<table>
     // Input: chrome-Nov_15_2014
-    // Output: httparchive:har.2014_11_15_chrome_(trailer)
-    private static String getBigQueryOutput(Options options, String trailer) {
+    // Output: httparchive:dataset.YYYY_MM_DD_client
+    private static String getBigQueryOutput(Options options, String dataset) {
         String[] parts = options.getInput().split("-");
-        String type = parts[0];
+        String client = parts[0] == "chrome" ? "desktop" : "mobile";
         String date = parts[1];
 
         SimpleDateFormat inputFormatter = new SimpleDateFormat("MMM_dd_yyyy");
@@ -376,10 +375,9 @@ public class BigQueryImport {
             LOG.error("Failed to parse table date", e);
         }
 
-        return options.getOutput() + "." // har.
+        return dataset + "." // pages/requests/...
                 + date + "_" // 2014_11_15_
-                + type + "_" // chrome_
-                + trailer; // pages/requests/...
+                + client; // desktop/mobile
     }
 
     public static void main(String[] args) {
@@ -463,7 +461,7 @@ public class BigQueryImport {
         PCollection<TableRow> bodies = results.get(BigQueryImport.BODIES_TAG);
         bodies.apply(BigQueryIO.Write
                 .named("write-bodies")
-                .to(getBigQueryOutput(options, "requests_bodies"))
+                .to(getBigQueryOutput(options, "response_bodies"))
                 .withSchema(bodySchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));

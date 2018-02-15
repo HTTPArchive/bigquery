@@ -26,15 +26,13 @@ fi
 if [ -n "$1" ]; then
   archive=$1
   if [[ $1 == *chrome* ]]; then
-    mobile=0
+    client="desktop"
     bucket="chrome-${import_date}"
-    table="${table}_chrome"
   else
-    mobile=1
+    client="mobile"
     bucket="android-${import_date}"
-    table="${table}_android"
   fi
-  echo "Processing $bucket, mobile: $mobile"
+  echo "Processing $bucket, client: $client"
 
 else
   echo "Must provide import type (e.g. chrome), and optional date:"
@@ -42,7 +40,7 @@ else
   exit
 fi
 
-if bq show "httparchive:har.${table}_pages"; then
+if bq show "httparchive:pages.${table}_${client}"; then
   echo "Table already exists in BigQuery, exiting"
   exit 1
 else

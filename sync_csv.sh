@@ -65,8 +65,8 @@ fi
 cd processed/${archive}
 
 table=$(date --date="$(echo $adate | sed "s/_/ /g" -)" "+%Y_%m_%d")
-ptable="runs.${table}_pages"
-rtable="runs.${table}_requests"
+ptable="summary_pages.${table}"
+rtable="summary_requests.${table}"
 
 echo -e "Syncing data to Google Storage"
 gsutil cp -n * gs://httparchive/${archive}/
@@ -74,6 +74,9 @@ gsutil cp -n * gs://httparchive/${archive}/
 if [[ $mobile == 1 ]]; then
   ptable="${ptable}_mobile"
   rtable="${rtable}_mobile"
+else
+  ptable="${ptable}_desktop"
+  rtable="${rtable}_desktop"
 fi
 
 bq show httparchive:${ptable} &> /dev/null
