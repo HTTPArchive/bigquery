@@ -362,7 +362,7 @@ public class BigQueryImport {
     // Output: httparchive:dataset.YYYY_MM_DD_client
     private static String getBigQueryOutput(Options options, String dataset) {
         String[] parts = options.getInput().split("-");
-        String client = parts[0] == "chrome" ? "desktop" : "mobile";
+        String client = parts[0].equals("chrome") ? "desktop" : "mobile";
         String date = parts[1];
 
         SimpleDateFormat inputFormatter = new SimpleDateFormat("MMM_dd_yyyy");
