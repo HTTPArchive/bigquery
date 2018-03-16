@@ -1,3 +1,8 @@
+# BigQuery Pipeline
+
+## Dataflow
+
+TODO
 
 ## JSON Generation
 
@@ -63,6 +68,8 @@ sql/getBigQueryDates.sh runs pages | \
 
 ### Generating Specific Metrics
 
+_TODO: document `sql/generateReport.sh`. This updates one histogram/timeseries at a time._
+
 Running `generateReports.sh` without the `-f` flag will result in metrics whose JSON results are already on Google Storage to skip being requeried. To regenerate results for specific metrics, the easiest thing to do may be to remove its results from Google Storage first, rather than running with the `-f` flag enabled and waiting for all other metrics to be queried and uploaded.
 
 For example, if a change is made to the `reqTotal.sql` histogram query, then you can "invalidate" all histogram results for this query by deleting all respective JSON files from Google Storage:
@@ -75,12 +82,18 @@ The wildcard in the YYYY_MM_DD position will instruct `gsutil` to delete all his
 
 Now you can delete more metric-specific results or rerun `generateReports.sh` without the `-f` flag and only the desired metrics will be requeried.
 
-Note that the cdn.httparchive.org may still contain the old version of the JSON file for the duration of the TTL. See below for more on invalidating the cache.
+Note that cdn.httparchive.org may still contain the old version of the JSON file for the duration of the TTL. See below for more on invalidating the cache.
 
 ## Serving the JSON Files
 
-The Google Storage bucket is behind an App Engine load balancer and CDN, which is aliased as [cdn.httparchive.org](cdn.httparchive.org). Accessing the JSON data follows the same pattern as the `gs://` URL. For example, the public URL for `gs://httparchive/reports/2017_09_01/bytesJS.json` is [http://cdn.httparchive.org/reports/2017_09_01/bytesJS.json](http://cdn.httparchive.org/reports/2017_09_01/bytesJS.json). Each file is configured to be served with `Content-Type: application/json` and `Cache-Control: public, max-age=3600` headers.
+The Google Storage bucket is behind an App Engine load balancer and CDN, which is aliased as [https://cdn.httparchive.org](https://cdn.httparchive.org). Accessing the JSON data follows the same pattern as the `gs://` URL. For example, the public URL for `gs://httparchive/reports/2017_09_01/bytesJS.json` is [https://cdn.httparchive.org/reports/2017_09_01/bytesJS.json](https://cdn.httparchive.org/reports/2017_09_01/bytesJS.json). Each file is configured to be served with `Content-Type: application/json` and `Cache-Control: public, max-age=3600` headers.
 
 The cache lifetime is set to 1 hour. If the cache needs to be invalidated for a particular file, this can be done by an administrator in the App Engine dashboard.
 
-A whitelist of origins are allowed to access the CDN. This list is maintained in [config/storage-cors.json](../config/storage-cors.json) and is configured to allow local dev servers, beta.httparchive.org, and the production site. Although HTTPS is not yet configured for the beta/production sites, their respective `https://` origins are whitelisted. The CDN is also not yet configured for HTTPS. To save changes to this file, run `npm run cors` which in turn runs the appropriate `gsutil` command. See [package.json](../package.json) for more info.
+A whitelist of origins are allowed to access the CDN. This list is maintained in [config/storage-cors.json](../config/storage-cors.json) and is configured to allow development, staging, and production servers. To save changes to this file, run:
+
+```sh
+gsutil cors set config/storage-cors.json gs://httparchive`
+```
+
+This will update the CORS settings for the Google Storage bucket.
