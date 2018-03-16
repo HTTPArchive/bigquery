@@ -8,13 +8,11 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      IF(STRPOS(_TABLE_SUFFIX, '_mobile') = 0,
-        'desktop',
-        'mobile') AS client,
+      _TABLE_SUFFIX AS client,
       COUNT(0) AS volume,
       CAST(FLOOR(CAST(JSON_EXTRACT(report, "$.audits.consistently-interactive.rawValue") AS FLOAT64) / 1000) AS INT64) AS bin
     FROM
-      `httparchive.lighthouse.${YYYY_MM_DD}*`
+      `httparchive.lighthouse.${YYYY_MM_DD}_*`
     GROUP BY
       bin,
       client

@@ -8,13 +8,11 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      IF(STRPOS(_TABLE_SUFFIX, '_mobile') = 0,
-        'desktop',
-        'mobile') AS client,
+      _TABLE_SUFFIX AS client,
       COUNT(0) AS volume,
       reqVideo AS bin
     FROM
-      `httparchive.summary_pages.${YYYY_MM_DD}*`
+      `httparchive.summary_pages.${YYYY_MM_DD}_*`
     GROUP BY
       bin,
       client ) )
