@@ -96,6 +96,9 @@ else
   echo -e "${rtable} already exists, skipping."
 fi
 
-cd $BASE
+echo -e "Attempting to generate reports..."
+cd $HOME/code
+generate_reports.sh $table
+
 echo "Done"
 
