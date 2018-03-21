@@ -62,6 +62,6 @@ mvn compile exec:java -Dexec.mainClass=com.httparchive.dataflow.BigQueryImport \
 
 echo "Attempting to generate reports..."
 cd $HOME/code
-generate_reports.sh $table
+. generate_reports.sh $table
 
 echo "Done"
