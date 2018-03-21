@@ -59,6 +59,7 @@ else
   echo -e "Converting requests data"
   gunzip -c "httparchive_${archive}_requests.csv.gz" \
 	| sed -e 's/\\N,/"",/g' -e 's/\\N$/""/g' -e 's/\\"/""/g' -e 's/\\"","/\\\\","/g' \
+  | python fixcsv.py \
 	| split --lines=8000000 --filter='pigz - > $FILE.gz' - processed/$archive/requests_
 fi
 
