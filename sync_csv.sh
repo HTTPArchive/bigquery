@@ -98,7 +98,7 @@ fi
 
 echo -e "Attempting to generate reports..."
 cd $HOME/code
-. generate_reports.sh $table
+. sql/generate_reports.sh -fth $table
 
 echo "Done"
 

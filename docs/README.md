@@ -6,10 +6,10 @@ TODO
 
 ## JSON Generation
 
-After each crawl, the [generateReports.sh](../sql/generateReports.sh) script is run with the date of the crawl. For example:
+After each crawl, the [generate_reports.sh](../sql/generate_reports.sh) script is run with the date of the crawl. For example:
 
 ```sh
-sql/generateReports.sh -t -h 2017_09_01
+sql/generate_reports.sh -t -h 2017_09_01
 ```
 
 This will generate timeseries and histogram reports for all metrics using predefined SQL queries. The histogram queries will fill table placeholders with the crawl date provided. For example:
@@ -28,7 +28,7 @@ After executing the histogram/timeseries queries for each metric on BigQuery, th
 
 ### Running Manually
 
-Sometimes it's necessary to manually run this process, for example if a new metric is added or specific dates need to be backfilled. The generateReports.sh script can be run with a different configuration of flags depending on your needs. From the script's documentation:
+Sometimes it's necessary to manually run this process, for example if a new metric is added or specific dates need to be backfilled. The generate_reports.sh script can be run with a different configuration of flags depending on your needs. From the script's documentation:
 
 ```sh
 # Flags:
@@ -57,20 +57,20 @@ Or if you want to limit the results to a particular range, you can pass in upper
 sql/getBigQueryDates.sh runs pages 2015_01_01 2015_12_15
 ```
 
-The output of this script is a newline-delimited list of dates. This format enables convenient piping of the output as input to the generateReports.sh script. For example:
+The output of this script is a newline-delimited list of dates. This format enables convenient piping of the output as input to the generate_reports.sh script. For example:
 
 ```sh
 sql/getBigQueryDates.sh runs pages | \
-  xargs -I date sql/generateReports.sh -h date
+  xargs -I date sql/generate_reports.sh -h date
 ```
 
 `xargs` handles the processing of each date and calls the other script.
 
 ### Generating Specific Metrics
 
-_TODO: document `sql/generateReport.sh`. This updates one histogram/timeseries at a time._
+_TODO: document `sql/generate_report.sh`. This updates one histogram/timeseries at a time._
 
-Running `generateReports.sh` without the `-f` flag will result in metrics whose JSON results are already on Google Storage to skip being requeried. To regenerate results for specific metrics, the easiest thing to do may be to remove its results from Google Storage first, rather than running with the `-f` flag enabled and waiting for all other metrics to be queried and uploaded.
+Running `generate_reports.sh` without the `-f` flag will result in metrics whose JSON results are already on Google Storage to skip being requeried. To regenerate results for specific metrics, the easiest thing to do may be to remove its results from Google Storage first, rather than running with the `-f` flag enabled and waiting for all other metrics to be queried and uploaded.
 
 For example, if a change is made to the `reqTotal.sql` histogram query, then you can "invalidate" all histogram results for this query by deleting all respective JSON files from Google Storage:
 
@@ -80,7 +80,7 @@ gsutil rm gs://httparchive/reports/*/reqTotal.json
 
 The wildcard in the YYYY_MM_DD position will instruct `gsutil` to delete all histogram results for this specific metric.
 
-Now you can delete more metric-specific results or rerun `generateReports.sh` without the `-f` flag and only the desired metrics will be requeried.
+Now you can delete more metric-specific results or rerun `generate_reports.sh` without the `-f` flag and only the desired metrics will be requeried.
 
 Note that cdn.httparchive.org may still contain the old version of the JSON file for the duration of the TTL. See below for more on invalidating the cache.
 

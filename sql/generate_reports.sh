@@ -47,6 +47,17 @@ if [ $GENERATE_HISTOGRAM -eq 0 -a $GENERATE_TIMESERIES -eq 0 ]; then
 	exit 1
 fi
 
+# Check if all tables for the given date are available in BigQuery.
+# Tables representing desktop/mobile and HAR/CSV data sources must exist.
+(bq show "httparchive:pages.${YYYY_MM_DD}_desktop" && \
+	bq show "httparchive:pages.${YYYY_MM_DD}_mobile" && \
+	bq show "httparchive:summary_pages.${YYYY_MM_DD}_desktop" && \
+	bq show "httparchive:summary_pages.${YYYY_MM_DD}_mobile") &> /dev/null
+if [ $GENERATE_HISTOGRAM -ne 0 -a $? -ne 0 ]; then
+	echo -e "The BigQuery tables for $YYYY_MM_DD are not available." >&2
+	exit 1
+fi
+
 if [ $GENERATE_HISTOGRAM -eq 0 ]; then
 	echo -e "Skipping histograms"
 else
