@@ -217,7 +217,8 @@ public class BigQueryImport {
                         .set("payload", pageJSON);
                 c.output(pageRow);
 
-                if (lighthouse != null) {
+
+                if (lighthouse != null && lighthouse.isObject()) {
                     // `audits` is redundant and can be omitted.
                     for (JsonNode category : lighthouse.get("reportCategories")) {
                         object = (ObjectNode) category;
@@ -231,21 +232,19 @@ public class BigQueryImport {
                             object.remove("items");
                         }
                     }
-                }
 
-                object = (ObjectNode) lighthouse;
-                String lighthouseJSON = lighthouse == null ? null : MAPPER.writeValueAsString(object);
+                    String lighthouseJSON = MAPPER.writeValueAsString(lighthouse);
+                    TableRow lighthouseRow = new TableRow()
+                            .set("url", pageUrl)
+                            .set("report", lighthouseJSON);
 
-                TableRow lighthouseRow = new TableRow()
-                        .set("url", pageUrl)
-                        .set("report", lighthouseJSON);
-
-                String lighthouseRowJSON = MAPPER.writeValueAsString(lighthouseRow);
-                Integer lighthouseRowSize = lighthouseRowJSON.getBytes("UTF-8").length + pageUrl.getBytes("UTF-8").length;
-                if (lighthouseRowSize > MAX_CONTENT_SIZE) {
-                    skippedLighthouse.addValue(1L);
-                } else {
-                    c.sideOutput(LIGHTHOUSE_TAG, lighthouseRow);
+                    String lighthouseRowJSON = MAPPER.writeValueAsString(lighthouseRow);
+                    Integer lighthouseRowSize = lighthouseRowJSON.getBytes("UTF-8").length + pageUrl.getBytes("UTF-8").length;
+                    if (lighthouseRowSize > MAX_CONTENT_SIZE) {
+                        skippedLighthouse.addValue(1L);
+                    } else {
+                        c.sideOutput(LIGHTHOUSE_TAG, lighthouseRow);
+                    }
                 }
 
                 JsonNode entries = data.get("entries");
