@@ -88,7 +88,7 @@ else
 		if [ $? -eq 0 ]; then
 			# Upload the response to Google Storage.
 			echo $result \
-				| gsutil  -h "Content-Type: application/json" cp - $gs_url
+				| gsutil  -h "Content-Type:application/json" cp - $gs_url
 		else
 			echo $result >&2
 		fi
@@ -122,7 +122,7 @@ else
 		if [ $? -eq 0 ]; then
 			# Upload the response to Google Storage.
 			echo $result \
-				| gsutil  -h "Content-Type: application/json" cp - $gs_url
+				| gsutil  -h "Content-Type:application/json" cp - $gs_url
 		else
 			echo $result >&2
 		fi
