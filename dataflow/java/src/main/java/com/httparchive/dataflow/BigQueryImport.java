@@ -47,7 +47,10 @@ import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.GZIPInputStream;
@@ -64,6 +67,8 @@ public class BigQueryImport {
     public static final TupleTag<TableRow> BODIES_TAG = new TupleTag<TableRow>() {
     };
     public static final TupleTag<TableRow> LIGHTHOUSE_TAG = new TupleTag<TableRow>() {
+    };
+    public static final TupleTag<TableRow> APPS_TAG = new TupleTag<TableRow>() {
     };
 
     private static class Response {
@@ -216,6 +221,37 @@ public class BigQueryImport {
                         .set("url", pageUrl)
                         .set("payload", pageJSON);
                 c.output(pageRow);
+
+
+                if (page.has("_detected") && page.has("_detected_apps")) {
+                    // Map the category detections to the app/info values.
+                    Map<String,String> appMap = new HashMap<String,String>();
+                    ObjectNode appNames = (ObjectNode) page.get("_detected_apps");
+                    Iterator<String> appIterator = appNames.fieldNames();
+                    while (appIterator.hasNext()) {
+                        String app = appIterator.next();
+                        String info = appNames.get(app).asText();
+                        String appId = info.length() > 0 ? app + " " + info : app;
+                        appMap.put(appId, app);
+                    }
+
+                    ObjectNode categories = (ObjectNode) page.get("_detected");
+                    Iterator<String> categoryIterator = categories.fieldNames();
+                    while (categoryIterator.hasNext()) {
+                        String category = categoryIterator.next();
+                        String[] apps = categories.get(category).asText().split(",");
+                        for (String appId : apps) {
+                            String app = appMap.get(appId);
+                            String info = appId.substring(app.length()).trim();
+                            TableRow appRow = new TableRow()
+                                .set("url", pageUrl)
+                                .set("category", category)
+                                .set("app", app)
+                                .set("info", info);
+                            c.sideOutput(APPS_TAG, appRow);
+                        }
+                    }
+                }
 
 
                 if (lighthouse != null && lighthouse.isObject()) {
@@ -410,7 +446,8 @@ public class BigQueryImport {
                                 BigQueryImport.PAGES_TAG,
                                 TupleTagList.of(BigQueryImport.ENTRIES_TAG)
                                 .and(BigQueryImport.BODIES_TAG)
-                                .and(BigQueryImport.LIGHTHOUSE_TAG))
+                                .and(BigQueryImport.LIGHTHOUSE_TAG)
+                                .and(BigQueryImport.APPS_TAG))
                         .of(new DataExtractorFn())
                 );
 
@@ -477,6 +514,25 @@ public class BigQueryImport {
                 .named("write-lighthouse")
                 .to(getBigQueryOutput(options, "lighthouse"))
                 .withSchema(lhReportSchema)
+                .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
+                .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
+
+        List<TableFieldSchema> app = new ArrayList<>();
+        app.add(new TableFieldSchema().setName("url").setType("STRING")
+                .setDescription("URL of the parent document"));
+        app.add(new TableFieldSchema().setName("category").setType("STRING")
+                .setDescription("The type of app"));
+        app.add(new TableFieldSchema().setName("app").setType("STRING")
+                .setDescription("Name of the detected app"));
+        app.add(new TableFieldSchema().setName("info").setType("STRING")
+                .setDescription("Additional information known about the app"));
+        TableSchema appSchema = new TableSchema().setFields(app);
+
+        PCollection<TableRow> apps = results.get(BigQueryImport.APPS_TAG);
+        apps.apply(BigQueryIO.Write
+                .named("write-apps")
+                .to(getBigQueryOutput(options, "apps"))
+                .withSchema(appSchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
 
