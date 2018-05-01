@@ -223,16 +223,22 @@ public class BigQueryImport {
                 c.output(pageRow);
 
 
-                if (page.has("_detected") && page.has("_detected_apps")) {
+                if (page.has("_detected") &&
+                        page.has("_detected_apps") &&
+                        page.get("_detected").isObject() &&
+                        page.get("_detected_apps").isObject()) {
                     // Map the category detections to the app/info values.
                     Map<String,String> appMap = new HashMap<String,String>();
                     ObjectNode appNames = (ObjectNode) page.get("_detected_apps");
                     Iterator<String> appIterator = appNames.fieldNames();
                     while (appIterator.hasNext()) {
                         String app = appIterator.next();
-                        String info = appNames.get(app).asText();
-                        String appId = info.length() > 0 ? app + " " + info : app;
-                        appMap.put(appId, app);
+                        // There may be multiple info values. Add each to the map.
+                        String[] infoList = appNames.get(app).asText().split(",");
+                        for (String info : infoList) {
+                            String appId = info.length() > 0 ? app + " " + info : app;
+                            appMap.put(appId, app);
+                        }
                     }
 
                     ObjectNode categories = (ObjectNode) page.get("_detected");
@@ -242,7 +248,12 @@ public class BigQueryImport {
                         String[] apps = categories.get(category).asText().split(",");
                         for (String appId : apps) {
                             String app = appMap.get(appId);
-                            String info = appId.substring(app.length()).trim();
+                            String info = "";
+                            if (app == null) {
+                                app = appId;
+                            } else {
+                                info = appId.substring(app.length()).trim();
+                            }
                             TableRow appRow = new TableRow()
                                 .set("url", pageUrl)
                                 .set("category", category)
