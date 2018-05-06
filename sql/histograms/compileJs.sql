@@ -12,7 +12,7 @@ FROM (
       COUNT(0) AS volume,
       CAST(JSON_EXTRACT(payload, "$['_cpu.v8.compile']") AS INT64) AS bin
     FROM
-      `httparchive.requests.${YYYY_MM_DD}_*`
+      `httparchive.pages.${YYYY_MM_DD}_*`
     GROUP BY
       bin,
       client
