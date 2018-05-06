@@ -66,7 +66,7 @@ fi
 
 gs_lens_dir=""
 if [[ $LENS != "" ]]; then
-	if [ ! -f "sql/lens/$LENS/histogram.sql" ] || [! -f "sql/lens/$LENS/timeseries.sql"]; then
+	if [ ! -f "sql/lens/$LENS/histograms.sql" ] || [ ! -f "sql/lens/$LENS/timeseries.sql" ]; then
 		echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
 		exit 1
 	fi
@@ -98,7 +98,7 @@ else
 		# Replace the date template in the query.
 		# Run the query on BigQuery.
 		if [[ $LENS != "" ]]; then
-			lens_join="JOIN ($(cat sql/lens/$LENS/histogram.sql)) USING (url, _TABLE_SUFFIX)"
+			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql)) USING (url, _TABLE_SUFFIX)"
 			result=$(sed -e "s/\(\`[^\`]*\`\)/\1 $lens_join/" $query \
 				| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 				| sed  -e "s/\${YYYYMM}/$YYYYMM/g" \
