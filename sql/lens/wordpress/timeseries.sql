@@ -1,0 +1,1 @@
+SELECT url, CONCAT(date, '_', client) AS _TABLE_SUFFIX FROM `httparchive.wappalyzer.wordpress`

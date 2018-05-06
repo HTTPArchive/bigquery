@@ -1,0 +1,1 @@
+SELECT url, client AS _TABLE_SUFFIX FROM `httparchive.wappalyzer.wordpress` WHERE date = '${YYYY_MM_DD}'
