@@ -10,7 +10,7 @@ if [ -n "$2" ]; then
   year=$(date -d $2 +%Y)
 else
   day=$(date +%d)
-  MM=$(date -d +%m)
+  MM=$(date +%m)
   month=$(date +%b)
   year=$(date +%Y)
 fi
