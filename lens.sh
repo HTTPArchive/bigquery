@@ -60,7 +60,10 @@ if [[ $LENS != "" ]]; then
 	fi
 	echo -e "Generating reports for $LENS"
 	gs_lens_dir="$LENS/"
-	lens_join="JOIN ($(cat sql/lens/$LENS/$report_format.sql)) USING (url, _TABLE_SUFFIX)"
+	lens_join="JOIN ($(cat sql/lens/$LENS/$report_format.sql | tr "\n" " ")) USING (url, _TABLE_SUFFIX)"
+	lens_join_on_page=$(echo $lens_join \
+		| sed -e "s/\(SELECT\s+url\)/\1 AS page/" \
+			-e "s/USING (url/USING (page/")
 fi
 
 gs_url=gs://httparchive/reports/$gs_lens_dir$DESTINATION
@@ -78,15 +81,6 @@ echo -e "Generating $metric $report_format"
 
 # Replace the date template in the query.
 # Run the query on BigQuery.
-result=$(sed -e "s/\(\`[^\`]*\`\)/\1 $lens_join/" $query \
-	| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" \
-	| sed  -e "s/\${YYYYMM}/$YYYYMM/" \
-	| $BQ_CMD)
-# Make sure the query succeeded.
-if [ $? -eq 0 ]; then
-	# Upload the response to Google Storage.
-	echo $result \
-		| gsutil  -h "Content-Type: application/json" cp - $gs_url
-else
-	echo $result >&2
-fi
+sed -e "s/\(\`[^\`]*\`\)/\1 $lens_join/" $query \
+	| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
+		-e "s/\${YYYYMM}/$YYYYMM/g"
