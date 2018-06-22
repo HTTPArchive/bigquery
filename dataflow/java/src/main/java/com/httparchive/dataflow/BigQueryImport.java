@@ -542,7 +542,7 @@ public class BigQueryImport {
         PCollection<TableRow> apps = results.get(BigQueryImport.APPS_TAG);
         apps.apply(BigQueryIO.Write
                 .named("write-apps")
-                .to(getBigQueryOutput(options, "apps"))
+                .to(getBigQueryOutput(options, "technologies"))
                 .withSchema(appSchema)
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE));
