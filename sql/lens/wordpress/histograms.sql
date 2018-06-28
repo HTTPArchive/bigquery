@@ -1,19 +1,10 @@
 SELECT
   url,
-  client AS _TABLE_SUFFIX
+  _TABLE_SUFFIX AS _TABLE_SUFFIX
 FROM
-  `httparchive.wappalyzer.detected`
+  `httparchive.technologies.${YYYY_MM_DD}_*`
 WHERE
-  app IN (
-  SELECT
-    DISTINCT name
-  FROM
-    `httparchive.wappalyzer.apps`,
-    UNNEST(implies) AS implies
-  WHERE
-    name = 'WordPress'
-    OR implies = 'WordPress')
-  AND date = '${YYYY_MM_DD}'
+  app = 'WordPress'
 GROUP BY
   1,
   2
