@@ -141,7 +141,7 @@
   },
   {
     "name": "resp_age",
-    "type": "STRING"
+    "type": "INTEGER"
   },
   {
     "name": "resp_cache_control",
@@ -161,7 +161,7 @@
   },
   {
     "name": "resp_content_length",
-    "type": "STRING"
+    "type": "INTEGER"
   },
   {
     "name": "resp_content_location",
