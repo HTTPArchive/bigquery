@@ -1,6 +1,6 @@
 #standardSQL
 SELECT
-  date,
+  REGEXP_REPLACE(date, "-", "_") AS date,
   count (uses_workboxjs) AS total_uses_workbox
 FROM
   `scratchspace.service_workers`
