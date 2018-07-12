@@ -1,6 +1,6 @@
 #standardSQL
 CREATE TABLE IF NOT EXISTS
-  `progressive_web_apps.service_workers` AS
+  `scratchspace.service_workers` AS
 SELECT
   pwa_url,
   rank,
@@ -20,7 +20,7 @@ SELECT
   REGEXP_CONTAINS(sw_code, r"\.onmessageerror\s*=|addEventListener\(\s*[\"']messageerror[\"']") AS messageerror_event,
   REGEXP_CONTAINS(sw_code, r"new Workbox|new workbox|workbox\.precaching\.|workbox\.strategies\.") AS uses_workboxjs
 FROM
-  `progressive_web_apps.pwa_candidates`
+  `scratchspace.pwa_candidates`
 JOIN (
   SELECT
     url,
@@ -36,7 +36,7 @@ JOIN (
     SELECT
       DISTINCT sw_url
     FROM
-      `progressive_web_apps.pwa_candidates`) ) AS sw_bodies
+      `scratchspace.pwa_candidates`) ) AS sw_bodies
 ON
   sw_bodies.url = sw_url
 ORDER BY

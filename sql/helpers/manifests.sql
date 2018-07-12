@@ -1,5 +1,5 @@
 #standardSQL
-  CREATE TABLE IF NOT EXISTS `progressive_web_apps.web_app_manifests` AS
+  CREATE TABLE IF NOT EXISTS `scratchspace.web_app_manifests` AS
 SELECT
   pwa_url,
   rank,
@@ -51,7 +51,7 @@ SELECT
   REGEXP_CONTAINS(manifest_code,
     r"\"supports_share\"\s*:") AS supports_share_property
 FROM
-  `progressive_web_apps.pwa_candidates`
+  `scratchspace.pwa_candidates`
 JOIN (
   SELECT
     url,
@@ -67,7 +67,7 @@ JOIN (
     SELECT
       DISTINCT manifest_url
     FROM
-      `progressive_web_apps.pwa_candidates`) ) AS manifest_bodies
+      `scratchspace.pwa_candidates`) ) AS manifest_bodies
 ON
   manifest_bodies.url = manifest_url
 ORDER BY
