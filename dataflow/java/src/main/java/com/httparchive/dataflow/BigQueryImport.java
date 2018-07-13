@@ -266,11 +266,6 @@ public class BigQueryImport {
 
 
                 if (lighthouse != null && lighthouse.isObject()) {
-                    // `audits` is redundant and can be omitted.
-                    for (JsonNode category : lighthouse.get("reportCategories")) {
-                        object = (ObjectNode) category;
-                        object.remove("audits");
-                    }
                     // Omit image data.
                     object = (ObjectNode) lighthouse.get("audits").get("screenshot-thumbnails");
                     if (object != null) {
