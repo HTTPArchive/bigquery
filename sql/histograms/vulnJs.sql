@@ -3,7 +3,11 @@ CREATE TEMPORARY FUNCTION countVulnerabilities(report STRING)
 RETURNS INT64 LANGUAGE js AS  """
   try {
     const $ = JSON.parse(report);
-    return $.audits['no-vulnerable-libraries'].extendedInfo.vulnerabilities.length;
+    const audit = $.audits['no-vulnerable-libraries'];
+    if (audit.extendedInfo && audit.extendedInfo.vulnerabilities) {
+      return audit.extendedInfo.vulnerabilities.length;
+    }
+    return +audit.displayValue.match(/\\d+/)[0];
   } catch (e) {
     return 0;
   }
