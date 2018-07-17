@@ -25,8 +25,8 @@ JOIN (
   SELECT
     url,
     body AS sw_code,
-    REGEXP_REPLACE(REGEXP_EXTRACT(_TABLE_SUFFIX, "\\d{4}(?:_\\d{2}){2}"), "_", "-") AS date,
-    REGEXP_EXTRACT(_TABLE_SUFFIX, ".*_(\\w+)$") AS platform
+    REGEXP_REPLACE(REGEXP_EXTRACT(_TABLE_SUFFIX, "\\d{4}(?:_\\d{2}){2}"), "_", "-") AS sw_date,
+    REGEXP_EXTRACT(_TABLE_SUFFIX, ".*_(\\w+)$") AS sw_platform
   FROM
     `httparchive.response_bodies.*`
   WHERE
@@ -39,6 +39,8 @@ JOIN (
       `scratchspace.pwa_candidates`) ) AS sw_bodies
 ON
   sw_bodies.url = sw_url
+  AND sw_date = date
+  AND sw_platform = platform
 ORDER BY
   rank ASC,
   pwa_url,
