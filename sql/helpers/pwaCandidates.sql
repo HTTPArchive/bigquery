@@ -9,15 +9,33 @@ CREATE TEMPORARY FUNCTION
 CREATE TABLE IF NOT EXISTS
   `scratchspace.pwa_candidates` AS
 SELECT
-  DISTINCT REGEXP_REPLACE(page, "^http:", "https:") AS pwa_url,
+  DISTINCT REGEXP_REPLACE(serviceworker.page, "^http:", "https:") AS pwa_url,
   IFNULL(rank,
     1000000) AS rank,
-  pathResolve(REGEXP_REPLACE(page, "^http:", "https:"),
-    REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)")) AS sw_url,
-  pathResolve(REGEXP_REPLACE(page, "^http:", "https:"),
-    REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?")) AS manifest_url
-FROM
-  `httparchive.response_bodies.*`
+  sw_url,
+  manifest_url
+FROM (
+  SELECT
+    page,
+    pathResolve(REGEXP_REPLACE(page, "^http:", "https:"),
+      REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)")) AS sw_url
+  FROM
+    `httparchive.response_bodies.*`
+  WHERE
+    (REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)") IS NOT NULL
+      AND REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)") != "/") ) AS serviceworker
+JOIN (
+  SELECT
+    page,
+    pathResolve(REGEXP_REPLACE(page, "^http:", "https:"),
+      REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?")) AS manifest_url
+  FROM
+    `httparchive.response_bodies.*`
+  WHERE
+    (REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?") IS NOT NULL
+      AND REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?") != "/") ) AS manifest
+ON
+  manifest.page = serviceworker.page
 LEFT JOIN (
   SELECT
     Alexa_domain AS domain,
@@ -29,12 +47,7 @@ LEFT JOIN (
     Alexa_rank IS NOT NULL
     AND Alexa_domain IS NOT NULL )
 ON
-  domain = NET.REG_DOMAIN(page)
-WHERE
-  (REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)") IS NOT NULL
-    AND REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)") != "/")
-  AND (REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?") IS NOT NULL
-    AND REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?") != "/")
+  domain = NET.REG_DOMAIN(serviceworker.page)
 ORDER BY
   rank ASC,
   pwa_url;
