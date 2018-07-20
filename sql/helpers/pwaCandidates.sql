@@ -27,7 +27,9 @@ FROM (
     `httparchive.response_bodies.*`
   WHERE
     (REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)") IS NOT NULL
-      AND REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)") != "/") ) AS serviceworker
+      AND REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)") != "/"
+      AND STARTS_WITH(pathResolve(REGEXP_REPLACE(page, "^http:", "https:"),
+          REGEXP_EXTRACT(body, "navigator\\.serviceWorker\\.register\\s*\\(\\s*[\"']([^\\),\\s\"']+)")), "https://") )) AS serviceworker
 JOIN (
   SELECT
     page,
@@ -39,7 +41,9 @@ JOIN (
     `httparchive.response_bodies.*`
   WHERE
     (REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?") IS NOT NULL
-      AND REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?") != "/") ) AS manifest
+      AND REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?") != "/"
+      AND STARTS_WITH(pathResolve(REGEXP_REPLACE(page, "^http:", "https:"),
+          REGEXP_EXTRACT(REGEXP_EXTRACT(body, "(<link[^>]+rel=[\"']?manifest[\"']?[^>]+>)"), "href=[\"']?([^\\s\"'>]+)[\"']?")), "https://")) ) AS manifest
 ON
   manifest.page = serviceworker.page
   AND manifest.platform = serviceworker.platform
