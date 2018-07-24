@@ -3,13 +3,9 @@ SELECT
   REGEXP_REPLACE(date, "-", "_") AS date,
   UNIX_MILLIS(TIMESTAMP(date)) AS timestamp,
   platform AS client,
-  0 AS p10,
-  0 AS p25,
-  COUNT(IF (install_event,
-      TRUE,
-      NULL)) AS p50,
-  0 AS p75,
-  0 AS p90
+  ROUND(SUM(IF(install_event,
+        1,
+        0)) * 100 / COUNT(0), 2) AS percent
 FROM
   `scratchspace.service_workers`
 WHERE

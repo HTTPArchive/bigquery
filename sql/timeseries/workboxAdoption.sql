@@ -3,15 +3,11 @@ SELECT
   REGEXP_REPLACE(date, "-", "_") AS date,
   UNIX_MILLIS(TIMESTAMP(date)) AS timestamp,
   platform AS client,
-  0 as p10,
-  0 as p25,
-  count (uses_workboxjs) AS p50,
-  0 as p75,
-  0 as p90
+  ROUND(SUM(IF(uses_workboxjs,
+        1,
+        0)) * 100 / COUNT(0), 2) AS percent
 FROM
   `scratchspace.service_workers`
-WHERE
-  uses_workboxjs
 GROUP BY
   date,
   timestamp,
