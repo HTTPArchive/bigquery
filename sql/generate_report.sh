@@ -82,7 +82,7 @@ result=$(sed -e "s/\(\`[^\`]*\`\)/\1 $lens_join/" $query \
 	| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 	| sed  -e "s/\${YYYYMM}/$YYYYMM/g" \
 	| $BQ_CMD)
- Make sure the query succeeded.
+# Make sure the query succeeded.
 if [ $? -eq 0 ]; then
 	# Upload the response to Google Storage.
 	echo $result \
