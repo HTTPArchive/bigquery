@@ -12,18 +12,22 @@
 #
 #   -d: The Google Storage destination under gs://httparchive/reports.
 #
+#   -l: Optional name of the report lens to generate, eg "wordpress".
+#
 
 set -o pipefail
 
 BQ_CMD="bq --format prettyjson --project_id httparchive query --max_rows 1000000"
 DESTINATION=0
 FORCE=0
+LENS=""
 
 # Read the flags.
-while getopts "fd:" opt; do
+while getopts "fd:l:" opt; do
 	case "${opt}" in
 		f) FORCE=1 ;;
 		d) DESTINATION=${OPTARG} ;;
+		l) LENS=${OPTARG} ;;
 		*) error "Unexpected option ${opt}" ;;
 	esac
 done
@@ -36,9 +40,10 @@ if [ $DESTINATION == 0 ]; then
 fi
 
 metric=$(echo $(basename $DESTINATION) | cut -d"." -f1)
-gs_url=gs://httparchive/reports/$DESTINATION
 YYYY_MM_DD=$(echo $DESTINATION | cut -d"/" -f1)
 YYYYMM=0
+gs_lens_dir=""
+lens_join=""
 
 if [ $YYYY_MM_DD == $DESTINATION ]; then
 	report_format="timeseries"
@@ -48,6 +53,17 @@ else
 	YYYYMM=${date_parts[0]}${date_parts[1]}
 fi
 
+if [[ $LENS != "" ]]; then
+	if [ ! -f "sql/lens/$LENS/histograms.sql" ] || [ ! -f "sql/lens/$LENS/timeseries.sql" ]; then
+		echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
+		exit 1
+	fi
+	echo -e "Generating reports for $LENS"
+	gs_lens_dir="$LENS/"
+	lens_join="JOIN ($(cat sql/lens/$LENS/$report_format.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
+fi
+
+gs_url=gs://httparchive/reports/$gs_lens_dir$DESTINATION
 query="sql/$report_format/$metric.sql"
 
 # Check to see if the results exist.
@@ -62,8 +78,9 @@ echo -e "Generating $metric $report_format"
 
 # Replace the date template in the query.
 # Run the query on BigQuery.
-result=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
-	| sed  -e "s/\${YYYYMM}/$YYYYMM/" \
+result=$(sed -e "s/\(\`[^\`]*\`\)/\1 $lens_join/" $query \
+	| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
+	| sed  -e "s/\${YYYYMM}/$YYYYMM/g" \
 	| $BQ_CMD)
 # Make sure the query succeeded.
 if [ $? -eq 0 ]; then

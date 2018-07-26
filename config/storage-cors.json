@@ -1,20 +1,22 @@
 [
-    {
-      "origin": [
-      	"http://beta.httparchive.org",
-      	"https://beta.httparchive.org",
-      	"http://httparchive.org",
-      	"https://httparchive.org",
-      	"http://www.httparchive.org",
-      	"https://www.httparchive.org",
-      	"http://127.0.0.1:8080",
-        "http://httparchive.appspot.com",
-        "https://httparchive.appspot.com",
-        "http://httparchive-staging.appspot.com",
-        "https://httparchive-staging.appspot.com"
-      ],
-      "responseHeader": ["Content-Type"],
-      "method": ["GET", "HEAD"],
-      "maxAgeSeconds": 3600
-    }
+		{
+			"origin": [
+				"http://beta.httparchive.org",
+				"https://beta.httparchive.org",
+				"http://httparchive.org",
+				"https://httparchive.org",
+				"http://www.httparchive.org",
+				"https://www.httparchive.org",
+				"http://staging.httparchive.org",
+				"https://staging.httparchive.org",
+				"http://127.0.0.1:8080",
+				"http://httparchive.appspot.com",
+				"https://httparchive.appspot.com",
+				"http://httparchive-staging.appspot.com",
+				"https://httparchive-staging.appspot.com"
+			],
+			"responseHeader": ["Content-Type"],
+			"method": ["GET", "HEAD"],
+			"maxAgeSeconds": 3600
+		}
 ]

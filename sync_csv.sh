@@ -99,6 +99,7 @@ fi
 echo -e "Attempting to generate reports..."
 cd $HOME/code
 . sql/generate_reports.sh -fth $table
+ls -1 sql/lens | xargs -I lens sql/generate_reports.sh -fth $table -l lens
 
 echo "Done"
 
