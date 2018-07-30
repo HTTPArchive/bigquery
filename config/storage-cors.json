@@ -14,7 +14,8 @@
 				"http://httparchive.appspot.com",
 				"https://httparchive.appspot.com",
 				"http://httparchive-staging.appspot.com",
-				"https://httparchive-staging.appspot.com"
+				"https://httparchive-staging.appspot.com",
+				"https://wordpress.httparchive.org"
 			],
 			"responseHeader": ["Content-Type"],
 			"method": ["GET", "HEAD"],
