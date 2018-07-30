@@ -99,7 +99,7 @@ else
 		# Run the query on BigQuery.
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
-			result=$(sed -e "s/\(\`[^\`]*\`\)/\1 $lens_join/" $query \
+			result=$(sed -e "s/\(\`[^\`]*\`)\?\)/\1 $lens_join/" $query \
 				| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 				| sed  -e "s/\${YYYYMM}/$YYYYMM/g" \
 				| $BQ_CMD)
@@ -142,7 +142,7 @@ else
 		# Run the query on BigQuery.
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
-			result=$(sed -e "s/\(\`[^\`]*\`\)/\1 $lens_join/" $query \
+			result=$(sed -e "s/\(\`[^\`]*\`)\?\)/\1 $lens_join/" $query \
 				| $BQ_CMD)
 		else
 			result=$(cat $query \
