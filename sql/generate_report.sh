@@ -4,7 +4,7 @@
 #
 # Usage:
 #
-#   $ sql/generateReport.sh -fd "2018_01_15/bytesJs.json"
+#   $ sql/generate_report.sh -fd "2018_01_15/bytesJs.json"
 #
 # Flags:
 #
