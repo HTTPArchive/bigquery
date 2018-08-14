@@ -78,7 +78,7 @@ echo -e "Generating $metric $report_format"
 
 # Replace the date template in the query.
 # Run the query on BigQuery.
-result=$(sed -e "s/\(\`[^\`]*\`)\?\)/\1 $lens_join/" $query \
+result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
 	| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 	| sed  -e "s/\${YYYYMM}/$YYYYMM/g" \
 	| $BQ_CMD)
