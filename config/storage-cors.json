@@ -15,6 +15,8 @@
 				"https://httparchive.appspot.com",
 				"http://httparchive-staging.appspot.com",
 				"https://httparchive-staging.appspot.com",
+				"https://drupal.httparchive.org",
+				"https://magento.httparchive.org",
 				"https://wordpress.httparchive.org"
 			],
 			"responseHeader": ["Content-Type"],
