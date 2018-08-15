@@ -21,11 +21,11 @@
 # May be combined with the generateReports.sh script
 # to generate a histogram for each date. For example:
 #
-#   sql/getBigQueryDates.sh runs pages | \
-#     xargs -I date sql/generateReports.sh -h date
+#   sql/get_bigquery_dates.sh runs pages | \
+#     xargs -I date sql/generate_reports.sh -h date
 #
-#   sql/getBigQueryDates.sh runs pages | \
-#     xargs -I date sql/generateReport.sh -d date/cruxDcl.json
+#   sql/get_bigquery_dates.sh runs pages | \
+#     xargs -I date sql/generate_report.sh -d date/cruxDcl.json
 
 set -eo pipefail
 
