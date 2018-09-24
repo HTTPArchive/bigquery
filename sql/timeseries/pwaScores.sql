@@ -3,7 +3,11 @@ CREATE TEMPORARY FUNCTION getPWAScore(report STRING)
 RETURNS FLOAT64
 LANGUAGE js AS """
   $=JSON.parse(report);
-  return $.reportCategories.find(i => i.name === 'Progressive Web App').score;
+  if ($.reportCategories) {
+    return $.reportCategories.find(i => i.name === 'Progressive Web App').score;
+  } else {
+    return $.categories.pwa.score * 100;
+  }
 """;
 
 SELECT
@@ -19,8 +23,8 @@ FROM
   `httparchive.lighthouse.*`
 WHERE
   report IS NOT NULL
-  AND JSON_EXTRACT(report,
-    "$.audits.service-worker.score") = 'true'
+  AND (JSON_EXTRACT(report, "$.audits.service-worker.score") = 'true'
+    OR JSON_EXTRACT(report, "$.audits.service-worker.score") = '1')
 GROUP BY
   date,
   timestamp,
