@@ -58,7 +58,6 @@ if [[ $LENS != "" ]]; then
 		echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
 		exit 1
 	fi
-	echo -e "Generating reports for $LENS"
 	gs_lens_dir="$LENS/"
 	lens_join="JOIN ($(cat sql/lens/$LENS/$report_format.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
 fi
@@ -70,11 +69,11 @@ query="sql/$report_format/$metric.sql"
 gsutil ls $gs_url &> /dev/null
 if [ $? -eq 0 ] && [ $FORCE -eq 0 ]; then
 	# The file already exists, so skip the query.
-	echo -e "$metric $report_format already exists. To overwrite, pass the -f flag."
+	echo -e "$DESTINATION already exists. To overwrite, pass the -f flag."
 	exit 0
 fi
 
-echo -e "Generating $metric $report_format"
+echo -e "Generating $gs_lens_dir$DESTINATION"
 
 # Replace the date template in the query.
 # Run the query on BigQuery.
