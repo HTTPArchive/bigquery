@@ -9,15 +9,6 @@
 # Where the first argument is the chart type,
 # the second argument is the metric name,
 # and the third argument is the BQ dataset.
-#
-# May be combined with the generateReports.sh script
-# to generate a histogram for each date. For example:
-#
-#   sql/get_bigquery_dates.sh runs pages | \
-#     xargs -I date sql/generate_reports.sh -h date
-#
-#   sql/get_bigquery_dates.sh runs pages | \
-#     xargs -I date sql/generate_report.sh -d date/cruxDcl.json
 
 set -eo pipefail
 
