@@ -1,4 +1,13 @@
 #!/bin/bash
+#
+# Usage:
+#
+#   ./sync_csv.sh [mobile_][Mon_D_YYYY]
+#
+# Examples:
+#
+#   ./sync_csv.sh mobile_Dec_15_2018
+#   ./sync_csv.sh Jan_1_2019
 
 DATA=$HOME/archive
 BASE=`pwd`
