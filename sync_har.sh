@@ -1,4 +1,15 @@
 #!/bin/bash
+#
+# Usage:
+#
+#   ./sync_har.sh [chrome,android] [YYYY-MM-DD]
+#
+# Examples:
+#
+#   ./sync_har.sh chrome
+#   ./sync_har.sh chrome 2019-01-01
+#   ./sync_har.sh android 2018-12-15
+#
 
 cd $HOME/code/dataflow/java
 BASE=`pwd`
@@ -15,13 +26,9 @@ else
   year=$(date +%Y)
 fi
 
-if [ $day -ge 15 ]; then
-  import_date=$(date +"${month}_15_${year}")
-  table="${year}_${MM}_15"
-else
-  import_date=$(date +"${month}_1_${year}")
-  table="${year}_${MM}_01"
-fi
+# All crawls begin on the first of the month.
+import_date=$(date +"${month}_1_${year}")
+table="${year}_${MM}_01"
 
 if [ -n "$1" ]; then
   archive=$1
