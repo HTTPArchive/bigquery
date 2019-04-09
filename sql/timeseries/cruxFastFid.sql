@@ -6,6 +6,8 @@ SELECT
   ROUND(SUM(fast_fid) * 100 / (SUM(fast_fid) + SUM(avg_fid) + SUM(slow_fid)), 2) AS percent
 FROM
   `chrome-ux-report.materialized.device_summary`
+WHERE
+  yyyymm >= "201806"
 GROUP BY
   date,
   timestamp,
