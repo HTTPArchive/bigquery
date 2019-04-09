@@ -1,12 +1,11 @@
 #standardSQL
 SELECT
-  REGEXP_REPLACE(_TABLE_SUFFIX, '(\\d{4})(\\d{2})', '\\1_\\2_01') AS date,
-  UNIX_DATE(CAST(REGEXP_REPLACE(_TABLE_SUFFIX, '(\\d{4})(\\d{2})', '\\1-\\2-01') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
-  IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
-  ROUND(SUM(IF(fcp.start >= 2500, fcp.density, 0)) * 100 / SUM(fcp.density), 2) AS percent
+  REGEXP_REPLACE(yyyymm, '(\\d{4})(\\d{2})', '\\1_\\2_01') AS date,
+  UNIX_DATE(CAST(REGEXP_REPLACE(yyyymm, '(\\d{4})(\\d{2})', '\\1-\\2-01') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
+  IF(device = 'desktop', 'desktop', 'mobile') AS client,
+  ROUND(SUM(slow_fcp) * 100 / (SUM(fast_fcp) + SUM(avg_fcp) + SUM(slow_fcp)), 2) AS percent
 FROM
-  `chrome-ux-report.all.*`,
-  UNNEST(first_contentful_paint.histogram.bin) AS fcp
+  `chrome-ux-report.materialized.device_summary`
 GROUP BY
   date,
   timestamp,
