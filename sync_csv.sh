@@ -109,7 +109,7 @@ echo -e "Attempting to generate reports..."
 cd $HOME/code
 
 gsutil -q stat gs://httparchive/reports/$table/*
-if [ $? -eq 0 ]; then
+if [ $? -eq 1 ]; then
   . sql/generate_reports.sh -fth $table
   ls -1 sql/lens | xargs -I lens sql/generate_reports.sh -fth $table -l lens
 else
