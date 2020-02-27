@@ -417,7 +417,7 @@ public class BigQueryImport {
         }
 
         return dataset + "." // pages/requests/...
-                + date + "_" // 2014_11_15_
+                + date + "_" // 2020_01_01_
                 + client; // desktop/mobile
     }
 
