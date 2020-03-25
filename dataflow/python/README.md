@@ -4,10 +4,11 @@
 
 Follow the [Quickstart using Python](https://cloud.google.com/dataflow/docs/quickstarts/quickstart-python#before-you-begin) guide.
 
-1. Create a Python 3 `virtualenv`:
+1. Create and activate a Python 3 `virtualenv`:
 
   ```
   python -m virtualenv --python=python3 --clear env
+  source env/bin/activate
   ```
 
 2. Install dependencies:

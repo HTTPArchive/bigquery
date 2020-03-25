@@ -22,18 +22,62 @@
 from __future__ import absolute_import
 
 import argparse
+import json
 import logging
 
 import apache_beam as beam
 from apache_beam.io.gcp.internal.clients import bigquery
-from apache_beam.options.pipeline_options import PipelineOptions
-from apache_beam.options.pipeline_options import SetupOptions
 
 
-def do_bigquery_import(har_file):
-  """Workflow to extract BigQuery data from HAR file."""
+def get_url(har):
+  url = har.get('log').get('pages')[0].get('_URL')
+  return {'url': url}
 
-  return (har_file | 'ExtractHAR' >> beam.Map(lambda har: har_file))
+
+class Test1(beam.DoFn):
+  def process(self, har):
+    table_spec = bigquery.TableReference(
+      projectId='httparchive',
+      datasetId='scratchspace',
+      tableId='dataflow_test1')
+
+    table_schema = 'url:STRING'
+
+    (har
+      | beam.FlatMap(get_url)
+      | 'BigQueryImport1' >> beam.io.WriteToBigQuery(
+        table_spec,
+        schema=table_schema,
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+    return []
+
+
+class Test2(beam.DoFn):
+  def process(self, har):
+    table_spec = bigquery.TableReference(
+      projectId='httparchive',
+      datasetId='scratchspace',
+      tableId='dataflow_test2')
+
+    table_schema = 'url:STRING'
+
+    (har
+      | beam.FlatMap(get_url)
+      | 'BigQueryImport2' >> beam.io.WriteToBigQuery(
+        table_spec,
+        schema=table_schema,
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+    return []
+
+
+def get_gcs_uri(release):
+  """Formats a release string into a gs:// file glob."""
+
+  return 'gs://httparchive/%s/*.har.gz' % release
 
 
 def run(argv=None):
@@ -47,21 +91,34 @@ def run(argv=None):
 
 
   with beam.Pipeline(argv=pipeline_args) as p:
+    har = (p
+      | beam.Create(['{"url": "test1", "foo": "abc"}', '{"url": "test2", "foo": "def"}'])
+      | beam.Map(json.loads))
 
-    table_spec = bigquery.TableReference(
-      projectId='httparchive',
-      datasetId='scratchspace',
-      tableId='dataflow_test')
-
-    table_schema = 'har:STRING'
-
-    (p 
-      | 'read' >> beam.io.ReadFromText(known_args.input)
-      | 'BigQueryImport' >> beam.io.WriteToBigQuery(
-        table_spec,
-        schema=table_schema,
+    (har
+      | beam.Map(lambda har: {'url': har.get('url')})
+      | 'Write1' >> beam.io.WriteToBigQuery(
+        'httparchive:scratchspace.dataflow1',
+        schema='url:STRING',
         write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+    (har
+      | beam.Map(lambda har: {'foo': har.get('foo')})
+      | 'Write2' >> beam.io.WriteToBigQuery(
+        'httparchive:scratchspace.dataflow2',
+        schema='foo:STRING',
+        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+'''
+    gcs_uri = get_gcs_uri(known_args.input)
+
+    (p
+      | 'read' >> beam.io.ReadFromText(gcs_uri)
+      | 'ParseHAR' >> beam.Map(json.loads)
+      | 'Test1' >> beam.ParDo(Test1())
+      | 'Test2' >> beam.ParDo(Test2()))
+'''
 
 
 if __name__ == '__main__':
