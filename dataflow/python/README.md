@@ -22,3 +22,31 @@ Follow the [Quickstart using Python](https://cloud.google.com/dataflow/docs/quic
 	```
 	export GOOGLE_APPLICATION_CREDENTIALS="./credentials/auth.json"
 	```
+
+## Running the pipeline
+
+1. Activate the Python virtual environment:
+
+  ```
+  source env/bin/activate
+  ```
+
+2. Run `bigquery_import.py`:
+
+  ```
+  python bigquery_import.py \
+    --runner=DataflowRunner \
+    --project=httparchive \
+    --temp_location=gs://httparchive/dataflow/temp \
+    --staging_location=gs://httparchive/dataflow/staging \
+    --region=us-central1 \
+    --input android-Mar_24_2020
+  ```
+
+  The `--runner=DataflowRunner` option forces the pipeline to run in the cloud using Dataflow. To run locally, omit this option. Be aware that crawls consume TB of disk space, so only run locally using subsetted input datasets. To create a subset dataset, copy a few HAR files on GCS to a new directory.
+
+3. Decativate the virtual environment:
+
+  ```
+  deactivate
+  ```

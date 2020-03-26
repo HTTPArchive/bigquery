@@ -22,6 +22,7 @@
 from __future__ import absolute_import
 
 import argparse
+from copy import deepcopy
 from datetime import datetime
 import json
 import logging
@@ -31,6 +32,10 @@ import apache_beam as beam
 from apache_beam.io.gcp.internal.clients import bigquery
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
+
+
+# BigQuery can handle rows up to 100 MB.
+MAX_CONTENT_SIZE = 100 * 1024 * 1024
 
 
 def get_page(har):
@@ -67,6 +72,8 @@ def get_requests(har):
 def trim_request(request):
   """Removes redundant fields from the request object."""
 
+  # Make a copy first so the response body can be used later.
+  request = deepcopy(request)
   request.get('response').get('content').pop('text', None)
   return request
 
@@ -77,12 +84,21 @@ def get_response_bodies(har):
   page_url = get_page_url(har)
   requests = har.get('log').get('entries')
 
-  return [{
-    'page': page_url,
-    'url': request.get('_full_url'),
-    'body': request.get('response').get('content').get('text'),
-    'truncated': 0
-  } for request in requests]
+  response_bodies = []
+
+  for request in requests:
+    request_url = request.get('_full_url')
+    body = request.get('response').get('content').get('text', '')
+    logging.info('RAV: extracting response body for "%s" of length %s' % (request_url, len(body)))
+
+    response_bodies.append({
+      'page': page_url,
+      'url': request_url,
+      'body': body[:MAX_CONTENT_SIZE],
+      'truncated': len(body) > MAX_CONTENT_SIZE
+    })
+
+  return response_bodies
 
 
 def get_technologies(har):
@@ -124,16 +140,21 @@ def get_lighthouse_reports(har):
   report = har.get('_lighthouse')
 
   if not report:
-    return {}
+    return
 
   page_url = get_page_url(har)
 
   # Omit large UGC.
   report.get('audits').get('screenshot-thumbnails', {}).get('details', {}).pop('items', None)
 
+  report_json = to_json(report)
+  if len(report_json) > MAX_CONTENT_SIZE:
+    logging.info('Skipping Lighthouse report for "%s": exceeded maximum content size of %s bytes.' % (page_url, MAX_CONTENT_SIZE))
+    return
+
   return {
     'url': page_url,
-    'report': to_json(report)
+    'report': report_json
   }
 
 
@@ -184,7 +205,9 @@ def get_bigquery_uri(release, dataset):
     client = 'mobile'
 
   date_obj = datetime.strptime(date_string, '%b_%d_%Y') # Mar_01_2020
-  date_string = date_obj.strftime('%Y_%m_%d') # 2020_03_01
+  #date_string = date_obj.strftime('%Y_%m_%d') # 2020_03_01
+  # TODO(rviscomi): This is just for debugging.
+  date_string = date_obj.strftime('%Y_%m_24') # 2020_03_24
 
   return 'httparchive:%s.%s_%s' % (dataset, date_string, client)
 

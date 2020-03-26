@@ -4,5 +4,6 @@ python bigquery_import.py \
   --runner=DataflowRunner \
   --project=httparchive \
   --temp_location=gs://httparchive/dataflow/temp \
-	--staging_location=gs://httparchive/dataflow/staging \
-	--input android-Mar_24_2020
+  --staging_location=gs://httparchive/dataflow/staging \
+  --region=us-central1 \
+  --input android-Mar_1_2020
