@@ -71,6 +71,20 @@ def trim_request(request):
   return request
 
 
+def get_response_bodies(har):
+  """Parses response bodies from a HAR object."""
+
+  page_url = get_page_url(har)
+  requests = har.get('log').get('entries')
+
+  return [{
+    'page': page_url,
+    'url': request.get('_full_url'),
+    'body': request.get('response').get('content').get('text'),
+    'truncated': 0
+  } for request in requests]
+
+
 def get_technologies(har):
   """Parses the technologies from a HAR object."""
   page = har.get('log').get('pages')[0]
@@ -110,7 +124,7 @@ def get_lighthouse_reports(har):
   report = har.get('_lighthouse')
 
   if not report:
-    return
+    return {}
 
   page_url = get_page_url(har)
 
@@ -119,7 +133,7 @@ def get_lighthouse_reports(har):
 
   return {
     'url': page_url,
-    'report': report
+    'report': to_json(report)
   }
 
 
@@ -187,28 +201,18 @@ def run(argv=None):
   pipeline_options.view_as(SetupOptions).save_main_session = True
 
 
-  with beam.Pipeline(argv=pipeline_args) as p:
+  with beam.Pipeline(options=pipeline_options) as p:
     gcs_uri = get_gcs_uri(known_args.input)
 
     hars = (p
       | 'LoadHARs' >> beam.io.ReadFromText(gcs_uri)
       | 'ParseHARs' >> beam.Map(json.loads))
 
-    if known_args.input.startswith('android'):
-      (hars
-        | 'MapLighthouseReports' >> beam.Map(get_lighthouse_reports)
-        | 'WriteLighthouseReports' >> beam.io.WriteToBigQuery(
-          get_bigquery_uri(known_args.input, 'lighthouse'),
-          schema='url:STRING, report:STRING',
-          write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-"""
     (hars
-      | 'MapTechnologies' >> beam.FlatMap(get_technologies)
-      | 'WriteTechnologies' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'technologies'),
-        schema='url:STRING, category:STRING, app:STRING, info:STRING',
+      | 'MapPages' >> beam.Map(get_page)
+      | 'WritePages' >> beam.io.WriteToBigQuery(
+        get_bigquery_uri(known_args.input, 'pages'),
+        schema='url:STRING, payload:STRING',
         write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
@@ -221,13 +225,30 @@ def run(argv=None):
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
     (hars
-      | 'MapPages' >> beam.Map(get_page)
-      | 'WritePages' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'pages'),
-        schema='url:STRING, payload:STRING',
+      | 'MapResponseBodies' >> beam.FlatMap(get_response_bodies)
+      | 'WriteResponseBodies' >> beam.io.WriteToBigQuery(
+        get_bigquery_uri(known_args.input, 'response_bodies'),
+        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
         write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-"""
+
+    (hars
+      | 'MapTechnologies' >> beam.FlatMap(get_technologies)
+      | 'WriteTechnologies' >> beam.io.WriteToBigQuery(
+        get_bigquery_uri(known_args.input, 'technologies'),
+        schema='url:STRING, category:STRING, app:STRING, info:STRING',
+        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+    # Skip Lighthouse for desktop HARs.
+    if known_args.input.startswith('android'):
+      (hars
+        | 'MapLighthouseReports' >> beam.Map(get_lighthouse_reports)
+        | 'WriteLighthouseReports' >> beam.io.WriteToBigQuery(
+          get_bigquery_uri(known_args.input, 'lighthouse'),
+          schema='url:STRING, report:STRING',
+          write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
 
 if __name__ == '__main__':
