@@ -70,7 +70,6 @@ def get_response_bodies(har):
   for request in requests:
     request_url = request.get('_full_url')
     body = request.get('response').get('content').get('text', '')
-    logging.info('RAV: extracting response body for "%s" of length %s' % (request_url, len(body)))
 
     response_bodies.append({
       'page': page_url,
@@ -209,7 +208,8 @@ def run(argv=None):
     gcs_uri = get_gcs_uri(known_args.input)
 
     hars = (p
-      | 'LoadHARs' >> beam.io.ReadFromText(gcs_uri)
+      | 'GlobHARs' >> beam.Create([gcs_uri])
+      | 'LoadHARs' >> beam.io.ReadAllFromText()
       | 'ParseHARs' >> beam.Map(json.loads))
 
     (hars
