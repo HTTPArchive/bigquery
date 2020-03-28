@@ -10,7 +10,6 @@ import logging
 import re
 
 import apache_beam as beam
-from apache_beam.io.gcp.internal.clients import bigquery
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
@@ -88,9 +87,16 @@ def get_technologies(har):
   app_names = page.get('_detected_apps', {})
   categories = page.get('_detected', {})
 
+  # When there are no detected apps, it appears as an empty array.
+  if isinstance(app_names, list):
+    app_names = {}
+    categories = {}
+
   app_map = {}
   app_list = []
   for app, info_list in app_names.items():
+    if not info_list:
+      continue
     # There may be multiple info values. Add each to the map.
     for info in info_list.split(','):
       app_id = '%s %s' % (app, info) if len(info) > 0 else app
@@ -210,7 +216,8 @@ def run(argv=None):
     hars = (p
       | 'GlobHARs' >> beam.Create([gcs_uri])
       | 'LoadHARs' >> beam.io.ReadAllFromText()
-      | 'ParseHARs' >> beam.Map(json.loads))
+      | 'ParseHARs' >> beam.Map(json.loads)
+      | 'ReshuffleParsedHARs' >> beam.Reshuffle())
 
     (hars
       | 'MapPages' >> beam.Map(get_page)

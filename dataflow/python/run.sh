@@ -6,4 +6,5 @@ python bigquery_import.py \
   --temp_location=gs://httparchive/dataflow/temp \
   --staging_location=gs://httparchive/dataflow/staging \
   --region=us-central1 \
+  --machine_type=n1-standard-4 \
   --input android-Mar_1_2020
