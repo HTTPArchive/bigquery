@@ -34,7 +34,7 @@ cd $DATA
 
 if [ ! -f httparchive_${archive}_pages.csv.gz ]; then
   echo -e "Downloading data for $archive"
-  wget -nv -N "https://legacy.httparchive.org/downloads/httparchive_${archive}_pages.csv.gz"
+  gsutil cp "gs://httparchive/downloads/httparchive_${archive}_pages.csv.gz" ./
   if [ $? -ne 0 ]; then
     echo "Pages data for ${adate} is missing, exiting"
     exit
@@ -44,7 +44,7 @@ else
 fi
 
 if [ ! -f httparchive_${archive}_requests.csv.gz ]; then
-  wget -nv -N "https://legacy.httparchive.org/downloads/httparchive_${archive}_requests.csv.gz"
+  gsutil cp "gs://httparchive/downloads/httparchive_${archive}_requests.csv.gz" ./
   if [ $? -ne 0 ]; then
     echo "Request data for ${adate} is missing, exiting"
     exit
