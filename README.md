@@ -24,7 +24,7 @@ After the upload is complete, a copy of the latest tables can be made with:
 $> bq.py cp runs.2013_06_15_pages runs.latest_pages
 $> bq.py cp runs.2013_06_15_pages_mobile runs.latest_pages_mobile
 $> bq.py cp runs.2013_06_15_requests runs.latest_requests
-$> bq.py cp runs.2013_06_15_requests_mobiel runs.latest_requests_mobile
+$> bq.py cp runs.2013_06_15_requests_mobile runs.latest_requests_mobile
 ```
 
 (MIT License) - Copyright (c) 2013 Ilya Grigorik
