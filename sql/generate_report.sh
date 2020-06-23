@@ -35,7 +35,8 @@ done
 # Exit early if there's nothing to do.
 if [ $DESTINATION == 0 ]; then
 	echo -e "You must provide a destination with the -d flag." >&2
-	echo -e "For example: sql/generateReport.sh -d \"2018_01_15/bytesJs.json\"" >&2
+	echo -e "For example (histograms): sql/generateReport.sh -d \"2018_01_15/bytesJs.json\"" >&2
+	echo -e "            (timeseries): sql/generateReport.sh -d \"swControlledPages.json\"" >&2
 	exit 1
 fi
 
@@ -63,7 +64,8 @@ if [[ $LENS != "" ]]; then
 fi
 
 gs_url=gs://httparchive/reports/$gs_lens_dir$DESTINATION
-query="sql/$report_format/$metric.sql"
+# query="sql/$report_format/$metric.sql"
+query="sql/timeseries/$metric.sql"
 
 # Check to see if the results exist.
 gsutil ls $gs_url &> /dev/null
