@@ -64,8 +64,7 @@ if [[ $LENS != "" ]]; then
 fi
 
 gs_url=gs://httparchive/reports/$gs_lens_dir$DESTINATION
-# query="sql/$report_format/$metric.sql"
-query="sql/timeseries/$metric.sql"
+query="sql/$report_format/$metric.sql"
 
 # Check to see if the results exist.
 gsutil ls $gs_url &> /dev/null
