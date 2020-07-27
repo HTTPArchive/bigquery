@@ -35,7 +35,8 @@ done
 # Exit early if there's nothing to do.
 if [ $DESTINATION == 0 ]; then
 	echo -e "You must provide a destination with the -d flag." >&2
-	echo -e "For example: sql/generateReport.sh -d \"2018_01_15/bytesJs.json\"" >&2
+	echo -e "For example (histograms): sql/generateReport.sh -d \"2018_01_15/bytesJs.json\"" >&2
+	echo -e "            (timeseries): sql/generateReport.sh -d \"swControlledPages.json\"" >&2
 	exit 1
 fi
 
