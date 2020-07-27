@@ -1,18 +1,23 @@
 #standardSQL
 SELECT
-  SUBSTR(_TABLE_SUFFIX, 0, 10) AS date,
-  UNIX_DATE(CAST(REPLACE(SUBSTR(_TABLE_SUFFIX, 0, 10), '_', '-') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
-  IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
-  ROUND(SUM(IF(IFNULL(
-    JSON_EXTRACT(payload, '$._blinkFeatureFirstUsed.Features.WebNfcNdefWriterWrite'),
-    JSON_EXTRACT(payload, '$._blinkFeatureFirstUsed.Features.3095'))
-  IS NOT NULL, 1, 0)) * 100 / COUNT(0), 5) AS percent
+  REGEXP_REPLACE(yyyymmdd, r"(\d{4})(\d{2})(\d{2})", "\\1_\\2_\\3") AS date,
+  UNIX_DATE(CAST(REGEXP_REPLACE(yyyymmdd, r"(\d{4})(\d{2})(\d{2})", "\\1-\\2-\\3") AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
+  client,
+  num_urls,
+  ROUND(num_urls / total_urls * 100, 5) AS percent,
+  ANY_VALUE(sample_urls) sample_urls,
 FROM
-  `httparchive.pages.*`
+  `httparchive.blink_features.usage`
+WHERE
+  id = "3095"
+  OR feature = "WebNfcNdefWriterWrite"
 GROUP BY
   date,
   timestamp,
-  client
+  client,
+  num_urls,
+  total_urls
 ORDER BY
   date DESC,
-  client
+  client,
+  num_urls DESC
