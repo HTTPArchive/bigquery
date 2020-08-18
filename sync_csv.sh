@@ -105,6 +105,10 @@ else
   echo -e "${rtable} already exists, skipping."
 fi
 
+echo -e "Deleting CSV artifacts..."
+rm $DATA/httparchive_${archive}_*
+rm -r $DATA/processed/$archive
+
 echo -e "Attempting to generate reports..."
 cd $HOME/code
 
