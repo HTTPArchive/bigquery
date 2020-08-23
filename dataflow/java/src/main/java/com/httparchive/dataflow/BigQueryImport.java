@@ -102,8 +102,8 @@ public class BigQueryImport {
         private final Aggregator<Long, Long> skippedBody
                 = createAggregator("skippedBody", new Sum.SumLongFn());
 
-        // truncate content at ~1.9MB; row limit is 2MB.
-        private static final Integer MAX_CONTENT_SIZE = 2 * 1024 * 1024;
+        // row limit is 100 MB
+        private static final Integer MAX_CONTENT_SIZE = 100 * 1024 * 1024;
 
         public static Response truncateUTF8(String s, int maxBytes) {
             int b = 0;
