@@ -25,7 +25,7 @@ if [ -n "$1" ]; then
 
 else
   echo "Must provide date, eg. Apr_15_2013"
-  exit
+  exit 1
 fi
 
 mkdir -p $DATA/processed/$archive
@@ -37,7 +37,7 @@ if [ ! -f httparchive_${archive}_pages.csv.gz ]; then
   gsutil cp "gs://httparchive/downloads/httparchive_${archive}_pages.csv.gz" ./
   if [ $? -ne 0 ]; then
     echo "Pages data for ${adate} is missing, exiting"
-    exit
+    exit 1
   fi
 else
   echo -e "Pages data already downloaded for $archive, skipping."
@@ -47,7 +47,7 @@ if [ ! -f httparchive_${archive}_requests.csv.gz ]; then
   gsutil cp "gs://httparchive/downloads/httparchive_${archive}_requests.csv.gz" ./
   if [ $? -ne 0 ]; then
     echo "Request data for ${adate} is missing, exiting"
-    exit
+    exit 1
   fi
 else
   echo -e "Request data already downloaded for $archive, skipping."
@@ -95,7 +95,7 @@ if [ $? -ne 0 ]; then
   bq load --max_bad_records 10 --replace $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
   if [ $? -ne 0 ]; then
     echo "Error loading ${ptable}, exiting"
-    exit
+    exit 1
   fi
 else
   echo -e "${ptable} already exists, skipping."
@@ -107,15 +107,22 @@ if [ $? -ne 0 ]; then
   bq load --max_bad_records 10 --replace $rtable gs://httparchive/${archive}/requests_* $BASE/schema/requests.json
   if [ $? -ne 0 ]; then
     echo "Error loading ${rtable}, exiting"
-    exit
+    exit 1
   fi
 else
   echo -e "${rtable} already exists, skipping."
 fi
 
-echo -e "Deleting CSV artifacts..."
-rm $DATA/httparchive_${archive}_*
-rm -r $DATA/processed/$archive
+
+bq show httparchive:${rtable} &> /dev/null
+if [ $? -eq 0 ]; then
+  echo -e "Deleting CSV artifacts..."
+  rm $DATA/httparchive_${archive}_*
+  rm -r $DATA/processed/$archive
+else
+  echo "Error loading into BigQuery, exiting"
+  exit 1
+fi
 
 echo -e "Attempting to generate reports..."
 cd $HOME/code
