@@ -10,6 +10,7 @@ import logging
 import re
 
 import apache_beam as beam
+import apache_beam.io.gcp.gcsio as gcsio
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
@@ -133,6 +134,7 @@ def get_lighthouse_reports(har):
   # Omit large UGC.
   report.get('audits').get('screenshot-thumbnails', {}).get('details', {}).pop('items', None)
 
+  # FIXME: Handle invalid JSON.
   report_json = to_json(report)
   if len(report_json) > MAX_CONTENT_SIZE:
     logging.info('Skipping Lighthouse report for "%s": exceeded maximum content size of %s bytes.' % (page_url, MAX_CONTENT_SIZE))
@@ -174,10 +176,16 @@ def to_json(obj):
   return json.dumps(obj, separators=(',', ':'), ensure_ascii=False)
 
 
-def get_gcs_uri(release):
-  """Formats a release string into a gs:// file glob."""
+def get_gcs_dir(release):
+  """Formats a release string into a gs:// directory."""
 
-  return 'gs://httparchive/%s/*.har.gz' % release
+  return 'gs://httparchive/%s/' % release
+
+
+def gcs_list(gcs_dir):
+  """Lists all files in a GCS directory."""
+  gcs = gcsio.GcsIO()
+  return gcs.list_prefix(gcs_dir)
 
 
 def get_bigquery_uri(release, dataset):
@@ -193,7 +201,7 @@ def get_bigquery_uri(release, dataset):
   date_obj = datetime.strptime(date_string, '%b_%d_%Y') # Mar_01_2020
   #date_string = date_obj.strftime('%Y_%m_%d') # 2020_03_01
   # TODO(rviscomi): This is just for debugging.
-  date_string = date_obj.strftime('%Y_%m_24') # 2020_03_24
+  date_string = date_obj.strftime('%Y_%m_15') # 2020_03_15
 
   return 'httparchive:%s.%s_%s' % (dataset, date_string, client)
 
@@ -211,13 +219,12 @@ def run(argv=None):
 
 
   with beam.Pipeline(options=pipeline_options) as p:
-    gcs_uri = get_gcs_uri(known_args.input)
+    gcs_dir = get_gcs_dir(known_args.input)
 
     hars = (p
-      | 'GlobHARs' >> beam.Create([gcs_uri])
-      | 'LoadHARs' >> beam.io.ReadAllFromText()
-      | 'ParseHARs' >> beam.Map(json.loads)
-      | 'ReshuffleParsedHARs' >> beam.Reshuffle())
+      | beam.Create([gcs_dir])
+      | beam.io.ReadAllFromText()
+      | beam.Map(json.loads))
 
     (hars
       | 'MapPages' >> beam.Map(get_page)

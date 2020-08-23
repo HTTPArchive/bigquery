@@ -7,4 +7,5 @@ python bigquery_import.py \
   --staging_location=gs://httparchive/dataflow/staging \
   --region=us-central1 \
   --machine_type=n1-standard-4 \
-  --input android-Mar_1_2020
+  --input android-Mar_1_2020 \
+  --experiment=use_beam_bq_sink
