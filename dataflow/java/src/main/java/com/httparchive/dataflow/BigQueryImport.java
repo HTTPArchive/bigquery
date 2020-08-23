@@ -102,8 +102,11 @@ public class BigQueryImport {
         private final Aggregator<Long, Long> skippedBody
                 = createAggregator("skippedBody", new Sum.SumLongFn());
 
-        // truncate content at ~1.9MB; row limit is 2MB.
-        private static final Integer MAX_CONTENT_SIZE = 2 * 1024 * 1024;
+        private final Aggregator<Long, Long> skippedPage
+                = createAggregator("skippedPages", new Sum.SumLongFn());
+
+        // row limit is 100 MB
+        private static final Integer MAX_CONTENT_SIZE = 100 * 1024 * 1024;
 
         public static Response truncateUTF8(String s, int maxBytes) {
             int b = 0;
@@ -216,6 +219,13 @@ public class BigQueryImport {
 
                 ObjectNode object = (ObjectNode) page;
                 String pageJSON = MAPPER.writeValueAsString(object);
+
+                Integer pageRowSize = pageJSON.getBytes("UTF-8").length + pageUrl.getBytes("UTF-8").length;
+                if (pageRowSize > MAX_CONTENT_SIZE) {
+                    LOG.error("Page row exceeded max content size ({} > {})", pageRowSize, MAX_CONTENT_SIZE);
+                    skippedPage.addValue(1L);
+                    return;
+                }
 
                 TableRow pageRow = new TableRow()
                         .set("url", pageUrl)
