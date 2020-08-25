@@ -32,6 +32,24 @@ mkdir -p $DATA/processed/$archive
 
 cd $DATA
 
+table=$(date --date="$(echo $adate | sed "s/_/ /g" -)" "+%Y_%m_%d")
+
+if [[ $mobile == 1 ]]; then
+  table="${table}_mobile"
+else
+  table="${table}_desktop"
+fi
+
+ptable="summary_pages.${table}"
+rtable="summary_requests.${table}"
+
+if bq show httparchive:${ptable} &> /dev/null && \
+   bq show httparchive:${rtable} &> /dev/null; then
+  # Tables should be deleted from BigQuery first if the intent is to overwrite them.
+  echo -e "BigQuery summary tables for $table already exist, exiting"
+  exit 0
+fi
+
 if [ ! -f httparchive_${archive}_pages.csv.gz ]; then
   echo -e "Downloading data for $archive"
   gsutil cp "gs://httparchive/downloads/httparchive_${archive}_pages.csv.gz" ./
@@ -74,20 +92,8 @@ fi
 
 cd processed/${archive}
 
-table=$(date --date="$(echo $adate | sed "s/_/ /g" -)" "+%Y_%m_%d")
-ptable="summary_pages.${table}"
-rtable="summary_requests.${table}"
-
 echo -e "Syncing data to Google Storage"
 gsutil cp -n * gs://httparchive/${archive}/
-
-if [[ $mobile == 1 ]]; then
-  ptable="${ptable}_mobile"
-  rtable="${rtable}_mobile"
-else
-  ptable="${ptable}_desktop"
-  rtable="${rtable}_desktop"
-fi
 
 bq show httparchive:${ptable} &> /dev/null
 if [ $? -ne 0 ]; then
