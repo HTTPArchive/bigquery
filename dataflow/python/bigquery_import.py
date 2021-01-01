@@ -16,38 +16,82 @@ from apache_beam.options.pipeline_options import SetupOptions
 
 
 # BigQuery can handle rows up to 100 MB.
-MAX_CONTENT_SIZE = 100 * 1024 * 1024
+MAX_CONTENT_SIZE = 2 * 1024 * 1024
 
 
 def get_page(har):
   """Parses the page from a HAR object."""
 
+  if not har:
+    return
+
   page = har.get('log').get('pages')[0]
   url = page.get('_URL')
 
+  try:
+    payload_json = to_json(page)
+  except:
+    logging.warning('Skipping pages payload for "%s": unable to stringify as JSON.' % url)
+    return
+
+  if len(payload_json) > MAX_CONTENT_SIZE:
+    logging.warning('Skipping pages payload for "%s": exceeded maximum content size of %s bytes.' % (url, MAX_CONTENT_SIZE))
+    return
+
   return {
     'url': url,
-    'payload': to_json(page)
+    'payload': payload_json
   }
 
 
 def get_page_url(har):
   """Parses the page URL from a HAR object."""
 
-  return get_page(har).get('url')
+  page = get_page(har)
+
+  if not page:
+    logging.warning('Unable to get URL from page (see preceding warning).')
+    return
+
+  return page.get('url')
 
 
 def get_requests(har):
   """Parses the requests from a HAR object."""
 
-  page_url = get_page_url(har)
-  requests = har.get('log').get('entries')
+  if not har:
+    return
 
-  return [{
-    'page': page_url,
-    'url': request.get('_full_url'),
-    'payload': to_json(trim_request(request))
-  } for request in requests]
+  page_url = get_page_url(har)
+
+  if not page_url:
+    logging.warning('Skipping requests payload: unable to get page URL (see preceding warning).')
+    return
+
+  entries = har.get('log').get('entries')
+
+  requests = []
+
+  for request in entries:
+    try:
+      payload = to_json(trim_request(request))
+    except:
+      logging.warning('Skipping requests payload for "%s": unable to stringify as JSON.' % request_url)
+      continue
+
+    request_url = request.get('_full_url')
+
+    if len(payload) > MAX_CONTENT_SIZE:
+      logging.warning('Skipping requests payload for "%s": exceeded maximum content size of %s bytes.' % (request_url, MAX_CONTENT_SIZE))
+      continue
+
+    requests.append({
+      'page': page_url,
+      'url': request_url,
+      'payload': payload
+    })
+
+  return requests
 
 
 def trim_request(request):
@@ -62,7 +106,15 @@ def trim_request(request):
 def get_response_bodies(har):
   """Parses response bodies from a HAR object."""
 
+  if not har:
+    return
+
   page_url = get_page_url(har)
+
+  if not page_url:
+    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
+    return
+
   requests = har.get('log').get('entries')
 
   response_bodies = []
@@ -71,11 +123,15 @@ def get_response_bodies(har):
     request_url = request.get('_full_url')
     body = request.get('response').get('content').get('text', '')
 
+    truncated = len(body) > MAX_CONTENT_SIZE
+    if truncated:
+      logging.warning('Truncating response body for "%s". Size %s exceeds limit %s.' % (request_url, len(body), MAX_CONTENT_SIZE))
+
     response_bodies.append({
       'page': page_url,
       'url': request_url,
       'body': body[:MAX_CONTENT_SIZE],
-      'truncated': len(body) > MAX_CONTENT_SIZE
+      'truncated': truncated
     })
 
   return response_bodies
@@ -83,6 +139,10 @@ def get_response_bodies(har):
 
 def get_technologies(har):
   """Parses the technologies from a HAR object."""
+
+  if not har:
+    return
+
   page = har.get('log').get('pages')[0]
   page_url = page.get('_URL')
   app_names = page.get('_detected_apps', {})
@@ -124,6 +184,9 @@ def get_technologies(har):
 def get_lighthouse_reports(har):
   """Parses Lighthouse results from a HAR object."""
 
+  if not har:
+    return
+
   report = har.get('_lighthouse')
 
   if not report:
@@ -131,13 +194,21 @@ def get_lighthouse_reports(har):
 
   page_url = get_page_url(har)
 
+  if not page_url:
+    logging.warning('Skipping lighthouse report: unable to get page URL (see preceding warning).')
+    return
+
   # Omit large UGC.
   report.get('audits').get('screenshot-thumbnails', {}).get('details', {}).pop('items', None)
 
-  # FIXME: Handle invalid JSON.
-  report_json = to_json(report)
+  try:
+    report_json = to_json(report)
+  except:
+    logging.warning('Skipping Lighthouse report for "%s": unable to stringify as JSON.' % page_url)
+    return
+
   if len(report_json) > MAX_CONTENT_SIZE:
-    logging.info('Skipping Lighthouse report for "%s": exceeded maximum content size of %s bytes.' % (page_url, MAX_CONTENT_SIZE))
+    logging.warning('Skipping Lighthouse report for "%s": exceeded maximum content size of %s bytes.' % (page_url, MAX_CONTENT_SIZE))
     return
 
   return {
@@ -170,10 +241,22 @@ def to_json(obj):
   Out of a sample of 200 actual request objects, this was
   the only difference between implementations. This can be
   considered an improvement.
-
   """
 
+  if not obj:
+    raise ValueError
+
   return json.dumps(obj, separators=(',', ':'), ensure_ascii=False)
+
+
+def from_json(str):
+  """Returns an object from the JSON representation."""
+
+  try:
+    return json.loads(str)
+  except Exception as e:
+    logging.error('Unable to parse JSON object "%s...": %s' % (str[:50], e))
+    return
 
 
 def get_gcs_dir(release):
@@ -199,9 +282,7 @@ def get_bigquery_uri(release, dataset):
     client = 'mobile'
 
   date_obj = datetime.strptime(date_string, '%b_%d_%Y') # Mar_01_2020
-  #date_string = date_obj.strftime('%Y_%m_%d') # 2020_03_01
-  # TODO(rviscomi): This is just for debugging.
-  date_string = date_obj.strftime('%Y_%m_15') # 2020_03_15
+  date_string = date_obj.strftime('%Y_%m_%d') # 2020_03_01
 
   return 'httparchive:%s.%s_%s' % (dataset, date_string, client)
 
@@ -224,7 +305,7 @@ def run(argv=None):
     hars = (p
       | beam.Create([gcs_dir])
       | beam.io.ReadAllFromText()
-      | beam.Map(json.loads))
+      | 'MapJSON' >> beam.Map(from_json))
 
     (hars
       | 'MapPages' >> beam.Map(get_page)
@@ -242,13 +323,14 @@ def run(argv=None):
         write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
-    (hars
-      | 'MapResponseBodies' >> beam.FlatMap(get_response_bodies)
-      | 'WriteResponseBodies' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'response_bodies'),
-        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+# Omit response bodies from the pipeline until we can make better use of sharding.
+#    (hars
+#      | 'MapResponseBodies' >> beam.FlatMap(get_response_bodies)
+#      | 'WriteResponseBodies' >> beam.io.WriteToBigQuery(
+#        get_bigquery_uri(known_args.input, 'response_bodies'),
+#        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
+#        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+#        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
     (hars
       | 'MapTechnologies' >> beam.FlatMap(get_technologies)
