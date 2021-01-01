@@ -5,7 +5,6 @@ from __future__ import absolute_import
 import argparse
 from copy import deepcopy
 from datetime import datetime
-import json
 import logging
 import re
 
@@ -13,6 +12,11 @@ import apache_beam as beam
 import apache_beam.io.gcp.gcsio as gcsio
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
+
+try:
+  import ujson as json
+except BaseException:
+  import json
 
 
 # BigQuery can handle rows up to 100 MB.
