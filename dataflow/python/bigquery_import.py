@@ -312,7 +312,7 @@ def run(argv=None):
       | 'MapJSON' >> beam.Map(from_json))
 
     (hars
-      | 'MapPages' >> beam.Map(get_page)
+      | 'MapPages' >> beam.FlatMap(get_page)
       | 'WritePages' >> beam.io.WriteToBigQuery(
         get_bigquery_uri(known_args.input, 'pages'),
         schema='url:STRING, payload:STRING',
@@ -347,7 +347,7 @@ def run(argv=None):
     # Skip Lighthouse for desktop HARs.
     if known_args.input.startswith('android'):
       (hars
-        | 'MapLighthouseReports' >> beam.Map(get_lighthouse_reports)
+        | 'MapLighthouseReports' >> beam.FlatMap(get_lighthouse_reports)
         | 'WriteLighthouseReports' >> beam.io.WriteToBigQuery(
           get_bigquery_uri(known_args.input, 'lighthouse'),
           schema='url:STRING, report:STRING',
