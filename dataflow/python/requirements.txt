@@ -1,2 +1,1 @@
-apache-beam[gcp]
-ujson
+apache-beam[gcp]==2.26

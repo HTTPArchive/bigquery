@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import argparse
 from copy import deepcopy
 from datetime import datetime
+import json
 import logging
 import re
 
@@ -12,11 +13,6 @@ import apache_beam as beam
 import apache_beam.io.gcp.gcsio as gcsio
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
-
-try:
-  import ujson as json
-except BaseException:
-  import json
 
 
 # BigQuery can handle rows up to 100 MB.
@@ -42,16 +38,16 @@ def get_page(har):
     logging.warning('Skipping pages payload for "%s": exceeded maximum content size of %s bytes.' % (url, MAX_CONTENT_SIZE))
     return
 
-  return {
+  return [{
     'url': url,
     'payload': payload_json
-  }
+  }]
 
 
 def get_page_url(har):
   """Parses the page URL from a HAR object."""
 
-  page = get_page(har)
+  page = get_page(har)[0]
 
   if not page:
     logging.warning('Unable to get URL from page (see preceding warning).')
@@ -215,10 +211,10 @@ def get_lighthouse_reports(har):
     logging.warning('Skipping Lighthouse report for "%s": exceeded maximum content size of %s bytes.' % (page_url, MAX_CONTENT_SIZE))
     return
 
-  return {
+  return [{
     'url': page_url,
     'report': report_json
-  }
+  }]
 
 
 def to_json(obj):

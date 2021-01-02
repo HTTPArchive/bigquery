@@ -45,8 +45,7 @@ python bigquery_import.py \
   --machine_type=n1-standard-32 \
   --input=android-Dec_1_2020 \
   --worker_disk_type=compute.googleapis.com/projects//zones//diskTypes/pd-ssd \
-  --experiment=use_beam_bq_sink \
-  --requirements_file requirements.txt
+  --experiment=use_beam_bq_sink
   ```
 
   The `--runner=DataflowRunner` option forces the pipeline to run in the cloud using Dataflow. To run locally, omit this option. Be aware that crawls consume TB of disk space, so only run locally using subsetted input datasets. To create a subset dataset, copy a few HAR files on GCS to a new directory.
