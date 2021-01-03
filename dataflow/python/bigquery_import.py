@@ -34,8 +34,9 @@ def get_page(har):
     logging.warning('Skipping pages payload for "%s": unable to stringify as JSON.' % url)
     return
 
-  if len(payload_json) > MAX_CONTENT_SIZE:
-    logging.warning('Skipping pages payload for "%s": exceeded maximum content size of %s bytes.' % (url, MAX_CONTENT_SIZE))
+  payload_size = len(payload_json)
+  if payload_size > MAX_CONTENT_SIZE:
+    logging.warning('Skipping pages payload for "%s": payload size (%s) exceeds the maximum content size of %s bytes.' % (url, payload_size, MAX_CONTENT_SIZE))
     return
 
   return [{
@@ -47,13 +48,13 @@ def get_page(har):
 def get_page_url(har):
   """Parses the page URL from a HAR object."""
 
-  page = get_page(har)[0]
+  page = get_page(har)
 
   if not page:
     logging.warning('Unable to get URL from page (see preceding warning).')
     return
 
-  return page.get('url')
+  return page[0].get('url')
 
 
 def get_requests(har):
@@ -65,6 +66,8 @@ def get_requests(har):
   page_url = get_page_url(har)
 
   if not page_url:
+    # The page_url field indirectly depends on the get_page function.
+    # If the page data is unavailable for whatever reason, skip its requests.
     logging.warning('Skipping requests payload: unable to get page URL (see preceding warning).')
     return
 
@@ -81,8 +84,9 @@ def get_requests(har):
 
     request_url = request.get('_full_url')
 
-    if len(payload) > MAX_CONTENT_SIZE:
-      logging.warning('Skipping requests payload for "%s": exceeded maximum content size of %s bytes.' % (request_url, MAX_CONTENT_SIZE))
+    payload_size = len(payload)
+    if payload_size > MAX_CONTENT_SIZE:
+      logging.warning('Skipping requests payload for "%s": payload size (%s) exceeded maximum content size of %s bytes.' % (request_url, payload_size, MAX_CONTENT_SIZE))
       continue
 
     requests.append({
@@ -125,7 +129,7 @@ def get_response_bodies(har):
 
     truncated = len(body) > MAX_CONTENT_SIZE
     if truncated:
-      logging.warning('Truncating response body for "%s". Size %s exceeds limit %s.' % (request_url, len(body), MAX_CONTENT_SIZE))
+      logging.warning('Truncating response body for "%s". Response body size %s exceeds limit %s.' % (request_url, len(body), MAX_CONTENT_SIZE))
 
     response_bodies.append({
       'page': page_url,
@@ -207,8 +211,9 @@ def get_lighthouse_reports(har):
     logging.warning('Skipping Lighthouse report for "%s": unable to stringify as JSON.' % page_url)
     return
 
-  if len(report_json) > MAX_CONTENT_SIZE:
-    logging.warning('Skipping Lighthouse report for "%s": exceeded maximum content size of %s bytes.' % (page_url, MAX_CONTENT_SIZE))
+  report_size = len(report_json)
+  if report_size > MAX_CONTENT_SIZE:
+    logging.warning('Skipping Lighthouse report for "%s": Report size (%s) exceeded maximum content size of %s bytes.' % (page_url, report_size, MAX_CONTENT_SIZE))
     return
 
   return [{
