@@ -11,8 +11,7 @@
 #   ./sync_har.sh android 2018-12-15
 #
 
-cd $HOME/code/dataflow/java
-BASE=`pwd`
+cd $HOME/code/dataflow/python
 
 if [ -n "$2" ]; then
   day=$(date -d $2 +%d)
@@ -61,11 +60,27 @@ else
   echo "Bucket exists, initiating DataFlow import..."
 fi
 
-mvn compile exec:java -Dexec.mainClass=com.httparchive.dataflow.BigQueryImport \
-  -Dexec.args="--project=httparchive --stagingLocation=gs://httparchive/dataflow/staging \
-               --runner=BlockingDataflowPipelineRunner --input=${bucket} \
-               --workerMachineType=n1-highmem-4"
+export GOOGLE_APPLICATION_CREDENTIALS="./credentials/auth.json"
 
+if [ ! -f $GOOGLE_APPLICATION_CREDENTIALS ]; then
+  echo "ERROR: ${GOOGLE_APPLICATION_CREDENTIALS} does not exist. See README for more info."
+  exit 1
+fi
+
+source env/bin/activate
+
+python bigquery_import.py \
+  --runner=DataflowRunner \
+  --project=httparchive \
+  --temp_location=gs://httparchive/dataflow/temp \
+  --staging_location=gs://httparchive/dataflow/staging \
+  --region=us-west1 \
+  --machine_type=n1-standard-32 \
+  --input="${bucket}" \
+  --worker_disk_type=compute.googleapis.com/projects//zones//diskTypes/pd-ssd \
+  --experiment=use_beam_bq_sink
+
+deactivate
 
 echo -e "Attempting to generate reports..."
 cd $HOME/code

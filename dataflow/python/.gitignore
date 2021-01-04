@@ -2,3 +2,5 @@ env
 lib
 adblock.egg*
 local
+credentials/auth.json
+__pycache__
