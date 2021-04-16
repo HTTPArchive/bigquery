@@ -34,7 +34,7 @@ cd $DATA
 
 if [ ! -f httparchive_${archive}_pages.csv.gz ]; then
   echo -e "Downloading data for $archive"
-  wget -nv -N "https://legacy.httparchive.org/downloads/httparchive_${archive}_pages.csv.gz"
+  gsutil cp "gs://httparchive/downloads/httparchive_${archive}_pages.csv.gz" ./
   if [ $? -ne 0 ]; then
     echo "Pages data for ${adate} is missing, exiting"
     exit
@@ -44,7 +44,7 @@ else
 fi
 
 if [ ! -f httparchive_${archive}_requests.csv.gz ]; then
-  wget -nv -N "https://legacy.httparchive.org/downloads/httparchive_${archive}_requests.csv.gz"
+  gsutil cp "gs://httparchive/downloads/httparchive_${archive}_requests.csv.gz" ./
   if [ $? -ne 0 ]; then
     echo "Request data for ${adate} is missing, exiting"
     exit
@@ -92,7 +92,7 @@ fi
 bq show httparchive:${ptable} &> /dev/null
 if [ $? -ne 0 ]; then
   echo -e "Submitting new pages import ${ptable} to BigQuery"
-  bq load --replace $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
+  bq load --max_bad_records 10 --replace $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
 else
   echo -e "${ptable} already exists, skipping."
 fi
@@ -100,7 +100,7 @@ fi
 bq show httparchive:${rtable} &> /dev/null
 if [ $? -ne 0 ]; then
   echo -e "Submitting new requests import ${rtable} to BigQuery"
-  bq load --replace $rtable gs://httparchive/${archive}/requests_* $BASE/schema/requests.json
+  bq load --max_bad_records 10 --replace $rtable gs://httparchive/${archive}/requests_* $BASE/schema/requests.json
 else
   echo -e "${rtable} already exists, skipping."
 fi
