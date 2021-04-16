@@ -25,19 +25,37 @@ if [ -n "$1" ]; then
 
 else
   echo "Must provide date, eg. Apr_15_2013"
-  exit
+  exit 1
 fi
 
 mkdir -p $DATA/processed/$archive
 
 cd $DATA
 
+table=$(date --date="$(echo $adate | sed "s/_/ /g" -)" "+%Y_%m_%d")
+
+if [[ $mobile == 1 ]]; then
+  table="${table}_mobile"
+else
+  table="${table}_desktop"
+fi
+
+ptable="summary_pages.${table}"
+rtable="summary_requests.${table}"
+
+if bq show httparchive:${ptable} &> /dev/null && \
+   bq show httparchive:${rtable} &> /dev/null; then
+  # Tables should be deleted from BigQuery first if the intent is to overwrite them.
+  echo -e "BigQuery summary tables for $table already exist, exiting"
+  exit 0
+fi
+
 if [ ! -f httparchive_${archive}_pages.csv.gz ]; then
   echo -e "Downloading data for $archive"
   gsutil cp "gs://httparchive/downloads/httparchive_${archive}_pages.csv.gz" ./
   if [ $? -ne 0 ]; then
     echo "Pages data for ${adate} is missing, exiting"
-    exit
+    exit 1
   fi
 else
   echo -e "Pages data already downloaded for $archive, skipping."
@@ -47,7 +65,7 @@ if [ ! -f httparchive_${archive}_requests.csv.gz ]; then
   gsutil cp "gs://httparchive/downloads/httparchive_${archive}_requests.csv.gz" ./
   if [ $? -ne 0 ]; then
     echo "Request data for ${adate} is missing, exiting"
-    exit
+    exit 1
   fi
 else
   echo -e "Request data already downloaded for $archive, skipping."
@@ -74,25 +92,17 @@ fi
 
 cd processed/${archive}
 
-table=$(date --date="$(echo $adate | sed "s/_/ /g" -)" "+%Y_%m_%d")
-ptable="summary_pages.${table}"
-rtable="summary_requests.${table}"
-
 echo -e "Syncing data to Google Storage"
 gsutil cp -n * gs://httparchive/${archive}/
-
-if [[ $mobile == 1 ]]; then
-  ptable="${ptable}_mobile"
-  rtable="${rtable}_mobile"
-else
-  ptable="${ptable}_desktop"
-  rtable="${rtable}_desktop"
-fi
 
 bq show httparchive:${ptable} &> /dev/null
 if [ $? -ne 0 ]; then
   echo -e "Submitting new pages import ${ptable} to BigQuery"
   bq load --max_bad_records 10 --replace $ptable gs://httparchive/${archive}/pages.csv.gz $BASE/schema/pages.json
+  if [ $? -ne 0 ]; then
+    echo "Error loading ${ptable}, exiting"
+    exit 1
+  fi
 else
   echo -e "${ptable} already exists, skipping."
 fi
@@ -101,8 +111,23 @@ bq show httparchive:${rtable} &> /dev/null
 if [ $? -ne 0 ]; then
   echo -e "Submitting new requests import ${rtable} to BigQuery"
   bq load --max_bad_records 10 --replace $rtable gs://httparchive/${archive}/requests_* $BASE/schema/requests.json
+  if [ $? -ne 0 ]; then
+    echo "Error loading ${rtable}, exiting"
+    exit 1
+  fi
 else
   echo -e "${rtable} already exists, skipping."
+fi
+
+
+bq show httparchive:${rtable} &> /dev/null
+if [ $? -eq 0 ]; then
+  echo -e "Deleting CSV artifacts..."
+  rm $DATA/httparchive_${archive}_*
+  rm -r $DATA/processed/$archive
+else
+  echo "Error loading into BigQuery, exiting"
+  exit 1
 fi
 
 echo -e "Attempting to generate reports..."

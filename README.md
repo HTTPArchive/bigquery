@@ -1,6 +1,6 @@
 ## HTTP Archive + BigQuery data import
 
-_Note: you don't need to import this data yourself, the BigQuery dataset is public! [Getting started](http://www.igvita.com/2013/06/20/http-archive-bigquery-web-performance-answers/)._
+_Note: you don't need to import this data yourself, the BigQuery dataset is public! [Getting started](https://github.com/HTTPArchive/httparchive.org/blob/master/docs/gettingstarted_bigquery.md)._
 
 However, if you do want your own private copy of the dataset... The following import and sync scripts will help you import the [HTTP Archive dataset](http://httparchive.org/downloads.php) into BigQuery and keep it up to date.
 
@@ -24,7 +24,7 @@ After the upload is complete, a copy of the latest tables can be made with:
 $> bq.py cp runs.2013_06_15_pages runs.latest_pages
 $> bq.py cp runs.2013_06_15_pages_mobile runs.latest_pages_mobile
 $> bq.py cp runs.2013_06_15_requests runs.latest_requests
-$> bq.py cp runs.2013_06_15_requests_mobiel runs.latest_requests_mobile
+$> bq.py cp runs.2013_06_15_requests_mobile runs.latest_requests_mobile
 ```
 
 (MIT License) - Copyright (c) 2013 Ilya Grigorik

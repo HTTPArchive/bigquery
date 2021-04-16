@@ -1,5 +1,5 @@
 data
 tools
 .DS_Store
-nohup.out
+*.out
 

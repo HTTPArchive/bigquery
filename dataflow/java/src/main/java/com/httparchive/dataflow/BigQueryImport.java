@@ -312,6 +312,17 @@ public class BigQueryImport {
                         resourceUrl = "";
                     }
 
+                    String requestId;
+                    if (req.has("_request_id")) {
+                        requestId = req.get("_request_id").textValue();
+                    } else if (req.has("_id")) {
+                        requestId = req.get("_id").textValue();
+                    } else if (req.has("_raw_id")) {
+                        requestId = req.get("_raw_id").textValue();
+                    } else {
+                        requestId = "";
+                    }
+
                     ObjectNode resp = (ObjectNode) req.get("response");
                     ObjectNode content = (ObjectNode) resp.get("content");
 
@@ -335,7 +346,8 @@ public class BigQueryImport {
                                 .set("page", pageUrl)
                                 .set("url", resourceUrl)
                                 .set("body", rsp.body)
-                                .set("truncated", rsp.truncated);
+                                .set("truncated", rsp.truncated)
+                                .set("requestId", requestId);
 
                         String bodyJSON = MAPPER.writeValueAsString(body);
                         Integer recordSize = bodyJSON.getBytes("UTF-8").length;
@@ -507,7 +519,9 @@ public class BigQueryImport {
         body.add(new TableFieldSchema().setName("body").setType("STRING")
                 .setDescription("Body of the response"));
         body.add(new TableFieldSchema().setName("truncated").setType("BOOLEAN")
-                .setDescription("Flag is true if body is >2MB"));
+                .setDescription("Flag is true if body is >100MB"));
+        body.add(new TableFieldSchema().setName("requestId").setType("STRING")
+                .setDescription("Corresponding _request_id property from the requests payload"));
         TableSchema bodySchema = new TableSchema().setFields(body);
 
         PCollection<TableRow> bodies = results.get(BigQueryImport.BODIES_TAG);
