@@ -7,7 +7,7 @@ SELECT
 FROM
   `chrome-ux-report.materialized.device_summary`
 WHERE
-  yyyymm >= "201806"
+  yyyymm >= 201806
 GROUP BY
   date,
   timestamp,
