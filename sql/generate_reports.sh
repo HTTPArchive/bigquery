@@ -29,7 +29,7 @@ LENS=""
 REPORTS="*"
 
 # Read the flags.
-while getopts ":fth:lr:" opt; do
+while getopts ":fth:l:r:" opt; do
 	case "${opt}" in
 		h)
 			GENERATE_HISTOGRAM=1
