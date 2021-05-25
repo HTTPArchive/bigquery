@@ -24,6 +24,7 @@ FORCE=0
 GENERATE_HISTOGRAM=0
 GENERATE_TIMESERIES=0
 LENS=""
+REPORTS="*"
 
 # Read the flags.
 while getopts ":fth:l:" opt; do
@@ -42,6 +43,9 @@ while getopts ":fth:l:" opt; do
 			;;
 		l)
 			LENS=${OPTARG}
+			;;
+		r)
+			REPORTS=${OPTARG}
 			;;
 	esac
 done
@@ -80,7 +84,7 @@ else
 	echo -e "Generating histograms for date $YYYY_MM_DD"
 
 	# Run all histogram queries.
-	for query in sql/histograms/*.sql; do
+	for query in sql/histograms/$REPORTS.sql; do
 		# Extract the metric name from the file path.
 		# For example, `sql/histograms/foo.sql` will produce `foo`.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
@@ -125,7 +129,7 @@ else
 	echo -e "Generating timeseries"
 
 	# Run all timeseries queries.
-	for query in sql/timeseries/*.sql; do
+	for query in sql/timeseries/$REPORTS.sql; do
 		# Extract the metric name from the file path.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
 
