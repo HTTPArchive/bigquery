@@ -33,7 +33,7 @@ FROM (
     FROM (
       SELECT
         form_factor,
-        spreadBins(experimental.first_input_delay.histogram.bin) AS bins
+        spreadBins(first_input.delay.histogram.bin) AS bins
       FROM
         `chrome-ux-report.all.${YYYYMM}`)
     CROSS JOIN
