@@ -16,6 +16,8 @@
 #
 #   -l: Optional name of the report lens to generate, eg "wordpress".
 #
+#   -r: Optional name of the report files to generate, eg "*crux*".
+#
 
 set -o pipefail
 
@@ -27,7 +29,7 @@ LENS=""
 REPORTS="*"
 
 # Read the flags.
-while getopts ":fth:l:" opt; do
+while getopts ":fth:lr:" opt; do
 	case "${opt}" in
 		h)
 			GENERATE_HISTOGRAM=1
