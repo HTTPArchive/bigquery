@@ -47,7 +47,7 @@ WHERE
 GROUP BY
   date,
   timestamp,
-  device
+  client
 ORDER BY
   date DESC,
   client
