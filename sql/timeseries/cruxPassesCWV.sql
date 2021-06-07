@@ -1,5 +1,5 @@
 #standardSQL
-# Fast LCP by device
+# Passes Core Web Vitals by device
 
 CREATE TEMP FUNCTION IS_GOOD (good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
   good / (good + needs_improvement + poor) >= 0.75
@@ -16,9 +16,17 @@ WITH
     origin,
     device,
 
+    fast_fid,
+    avg_fid,
+    slow_fid,
+
     fast_lcp,
     avg_lcp,
-    slow_lcp
+    slow_lcp,
+
+    small_cls,
+    medium_cls,
+    large_cls
 
   FROM
     `chrome-ux-report.materialized.device_summary`
@@ -33,9 +41,13 @@ SELECT
   IF(device = 'desktop', 'desktop', 'mobile') AS client,
   SAFE_DIVIDE(
       COUNT(DISTINCT IF(
-          IS_GOOD(fast_lcp, avg_lcp, slow_lcp), origin, NULL)), 
+          IS_GOOD(fast_fid, avg_fid, slow_fid) AND
+          IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AND
+          IS_GOOD(small_cls, medium_cls, large_cls), origin, NULL)),
       COUNT(DISTINCT IF(
-          IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp), origin, NULL))) AS percent
+          IS_NON_ZERO(fast_fid, avg_fid, slow_fid) AND
+          IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp) AND
+          IS_NON_ZERO(small_cls, medium_cls, large_cls), origin, NULL))) AS percent,
 FROM
   base
 WHERE
