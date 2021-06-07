@@ -22,7 +22,7 @@ WITH
   base AS (
   SELECT
     yyyymm,
-    origin,
+    origin,
     device,
 
     fast_lcp,
@@ -39,7 +39,7 @@ WITH
 SELECT
   REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\d{4})(\\d{2})', '\\1_\\2_01') AS date,
   UNIX_DATE(CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\d{4})(\\d{2})', '\\1-\\2-01') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
-  IF(device = 'desktop', 'desktop', 'mobile') AS client,
+  IF(device = 'desktop', 'desktop', 'mobile') AS client,
   SAFE_DIVIDE(
       COUNT(DISTINCT IF(
           IS_GOOD(fast_lcp, avg_lcp, slow_lcp), origin, NULL)), 
@@ -52,7 +52,7 @@ WHERE
 GROUP BY
   date,
   timestamp,
-  client
+  client
 ORDER BY
   date DESC,
   client
