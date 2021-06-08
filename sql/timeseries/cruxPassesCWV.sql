@@ -19,7 +19,7 @@ SELECT
           (p75_fid IS NULL OR IS_GOOD(fast_fid, avg_fid, slow_fid)) AND
           (p75_lcp IS NULL OR IS_GOOD(fast_lcp, avg_lcp, slow_lcp)) AND
           (p75_cls IS NULL OR IS_GOOD(small_cls, medium_cls, large_cls)), origin, NULL)),
-      COUNT(DISTINCT origin)) * 100 AS percent,
+      COUNT(DISTINCT origin)) * 100 AS percent
 FROM
   `chrome-ux-report.materialized.device_summary`
 WHERE
