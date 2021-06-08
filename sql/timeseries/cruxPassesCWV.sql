@@ -15,18 +15,17 @@ SELECT
   IF(device = 'desktop', 'desktop', 'mobile') AS client,
   SAFE_DIVIDE(
       COUNT(DISTINCT IF(
-          IS_GOOD(fast_fid, avg_fid, slow_fid) AND
-          IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AND
-          IS_GOOD(small_cls, medium_cls, large_cls), origin, NULL)),
-      COUNT(DISTINCT IF(
-          IS_NON_ZERO(fast_fid, avg_fid, slow_fid) AND
-          IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp) AND
-          IS_NON_ZERO(small_cls, medium_cls, large_cls), origin, NULL))) * 100 AS percent,
+          /* FID can be null quite often, and LCP and CLS less so */
+          (p75_fid IS NULL OR IS_GOOD(fast_fid, avg_fid, slow_fid)) AND
+          (p75_lcp IS NULL OR IS_GOOD(fast_lcp, avg_lcp, slow_lcp)) AND
+          (p75_cls IS NULL OR IS_GOOD(small_cls, medium_cls, large_cls)), origin, NULL)),
+      COUNT(DISTINCT origin)) * 100 AS percent,
 FROM
   `chrome-ux-report.materialized.device_summary`
 WHERE
   device IN ('desktop','phone')
-  AND yyyymm >= 201909
+  AND yyyymm > 201909
+  AND (p75_fid IS NOT NULL OR p75_lcp IS NOT NULL OR p75_cls IS NOT NULL) /* Must have at least one CWV */
 GROUP BY
   date,
   timestamp,
