@@ -105,6 +105,10 @@ else
 		# Run the query on BigQuery.
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
+			if [[ $metric == crux* ]]; then
+				echo "CrUX queries do not support histograms for lens's so skipping lens"
+				continue
+			fi
 			result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
 				| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 				| sed  -e "s/\${YYYYMM}/$YYYYMM/g" \
@@ -148,6 +152,14 @@ else
 		# Run the query on BigQuery.
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
+			if [[ $metric == crux* ]]; then
+				echo "CrUX query so using alternative lens join"
+				lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) ON (origin || '\/' = url AND REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\\\\\\\d{4})(\\\\\\\\d{2})', '\\\\\\\\1_\\\\\\\\2_01') || '_' || IF(device = 'phone', 'mobile', device) = _TABLE_SUFFIX)"
+			fi
+			if [[ $(grep "httparchive.blink_features.usage" $query) ]]; then
+				echo "blink_features.usage queries do not support lens's so skipping lens"
+				continue
+			fi
 			result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
 				| $BQ_CMD)
 		else
