@@ -103,6 +103,7 @@ else
 
 		# Replace the date template in the query.
 		# Run the query on BigQuery.
+		START_TIME=${{$SECONDS}}
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
 			if [[ $metric == crux* ]]; then
@@ -120,6 +121,12 @@ else
 		fi
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
+			ELAPSED_TIME=$(($SECONDS - $START_TIME))
+			if [[ $LENS != "" ]]; then
+				echo "$metric for $LENS took $ELAPSED_TIME seconds"
+			else
+				echo "$metric took $ELAPSED_TIME seconds"
+			fi
 			# Upload the response to Google Storage.
 			echo $result \
 				| gsutil  -h "Content-Type:application/json" cp - $gs_url
@@ -150,6 +157,7 @@ else
 		echo -e "Generating $metric timeseries"
 
 		# Run the query on BigQuery.
+		START_TIME=$SECONDS
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
 			if [[ $metric == crux* ]]; then
@@ -168,6 +176,12 @@ else
 		fi
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
+			ELAPSED_TIME=$(($SECONDS - $START_TIME))
+			if [[ $LENS != "" ]]; then
+				echo "$metric for $LENS took $ELAPSED_TIME seconds"
+			else
+				echo "$metric took $ELAPSED_TIME seconds"
+			fi
 			# Upload the response to Google Storage.
 			echo $result \
 				| gsutil  -h "Content-Type:application/json" cp - $gs_url
