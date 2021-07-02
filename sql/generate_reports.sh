@@ -103,7 +103,7 @@ else
 
 		# Replace the date template in the query.
 		# Run the query on BigQuery.
-		START_TIME=${{$SECONDS}}
+		START_TIME=$SECONDS
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
 			if [[ $metric == crux* ]]; then
