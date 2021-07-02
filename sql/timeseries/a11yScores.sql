@@ -1,4 +1,5 @@
 #standardSQL
+# Lighthouse changed format of scores in v3.0.0 released in July 2018 so hande old and new
 CREATE TEMPORARY FUNCTION getA11yScore(reportCategories STRING, score STRING)
 RETURNS FLOAT64
 LANGUAGE js AS """
