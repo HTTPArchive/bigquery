@@ -39,6 +39,9 @@ Sometimes it's necessary to manually run this process, for example if a new metr
 #
 #   -f: Whether to force histogram querying and updating even if the data exists.
 #       Timeseries are usually appended to from last date, but this flag forces a complete rerun
+#
+#   -r: Optional pattern match for reports to be run. Use quotes to avoid the shell expanding names
+#       (e.g. "*crux*")
 ```
 
 You can omit one of the `-t` or -h` flags to focus only on histogram or timeseries generation. The `-f` flag ensures that histogram data gets overwritten. Omit this flag to skip queries for dates that already exist (much faster for batch jobs, see below).
