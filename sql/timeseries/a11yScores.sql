@@ -22,7 +22,7 @@ FROM (
   SELECT
     SUBSTR(_TABLE_SUFFIX, 0, 10) AS date,
     IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
-    IFNULL(CAST(JSON_EXTRACT(report, '$.categories.accessibility.score') AS FLOAT64) * 100,getA11yScore(JSON_EXTRACT(report, '$.reportCategories'))) AS score
+    IFNULL(CAST(JSON_EXTRACT(report, '$.categories.accessibility.score') AS FLOAT64) * 100, getA11yScore(JSON_EXTRACT(report, '$.reportCategories'))) AS score
   FROM
     `httparchive.lighthouse.*`
   WHERE
