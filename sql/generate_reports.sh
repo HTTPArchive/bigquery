@@ -192,8 +192,8 @@ else
 
 			if [[ -n "${date_join}" ]]; then
 				if [[ $(grep -i "WHERE" $query) ]]; then
-                    # If WHERE clause already exists then add to it, before GROUP BY
-					result=$(sed -e "s/\(GROUP BY\)/AND $date_join \1/" $query \
+                    # If WHERE clause already exists then add to it
+					result=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
 						| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
 						| $BQ_CMD)
 				else
