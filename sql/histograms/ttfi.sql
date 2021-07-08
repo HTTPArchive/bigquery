@@ -10,7 +10,7 @@ FROM (
     SELECT
       _TABLE_SUFFIX AS client,
       COUNT(0) AS volume,
-      CAST(FLOOR(CAST(IFNULL(JSON_EXTRACT(report, "$.audits.first-interactive.rawValue"), JSON_EXTRACT(report, "$.audits.first-cpu-idle.rawValue")) AS FLOAT64) / 1000) AS INT64) AS bin
+      CAST(FLOOR(CAST(IFNULL(JSON_EXTRACT(report, "$.audits.first-cpu-idle.numericValue"),IFNULL(JSON_EXTRACT(report, "$.audits.first-interactive.rawValue"), JSON_EXTRACT(report, "$.audits.first-cpu-idle.rawValue"))) AS FLOAT64) / 1000) AS INT64) AS bin
     FROM
       `httparchive.lighthouse.${YYYY_MM_DD}_*`
     GROUP BY
