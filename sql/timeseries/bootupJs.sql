@@ -12,8 +12,8 @@ FROM (
   SELECT
     _TABLE_SUFFIX AS _TABLE_SUFFIX,
     CAST(IFNULL(
-      JSON_EXTRACT(report, "$.audits.bootup-time.rawValue"),
-      JSON_EXTRACT(report, "$.audits.bootup-time.numericValue")
+      JSON_EXTRACT(report, "$.audits.bootup-time.numericValue"),
+      JSON_EXTRACT(report, "$.audits.bootup-time.rawValue")
       ) AS FLOAT64) / 1000 AS value
   FROM
     `httparchive.lighthouse.*`
