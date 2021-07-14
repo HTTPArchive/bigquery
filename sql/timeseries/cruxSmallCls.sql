@@ -1,5 +1,5 @@
 #standardSQL
-# Fast FID by device
+# Small CLS by device
 
 CREATE TEMP FUNCTION IS_GOOD (good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
   good / (good + needs_improvement + poor) >= 0.75
@@ -15,14 +15,14 @@ SELECT
   IF(device = 'desktop', 'desktop', 'mobile') AS client,
   SAFE_DIVIDE(
       COUNT(DISTINCT IF(
-          IS_GOOD(fast_fid, avg_fid, slow_fid), origin, NULL)), 
+          IS_GOOD(small_cls, medium_cls, large_cls), origin, NULL)), 
       COUNT(DISTINCT IF(
-          IS_NON_ZERO(fast_fid, avg_fid, slow_fid), origin, NULL))) * 100 AS percent
+          IS_NON_ZERO(small_cls, medium_cls, large_cls), origin, NULL))) * 100 AS percent
 FROM
   `chrome-ux-report.materialized.device_summary`
 WHERE
   device IN ('desktop','phone')
-  AND yyyymm >= 201806
+    AND yyyymm >= 201905
 GROUP BY
   date,
   timestamp,

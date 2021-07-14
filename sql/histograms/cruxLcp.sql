@@ -2,8 +2,8 @@
 CREATE TEMPORARY FUNCTION spreadBins(bins ARRAY<STRUCT<start INT64, `end` INT64, density FLOAT64>>)
 RETURNS ARRAY<STRUCT<client STRING, start INT64, density FLOAT64>>
 LANGUAGE js AS """
-  // Convert into 25ms bins and spread the density around.
-  const WIDTH = 25;
+  // Convert into 100ms bins and spread the density around.
+  const WIDTH = 100;
   return (bins || []).reduce((bins, bin) => {
     bin.start = +bin.start;
     bin.end = Math.min(bin.end, bin.start + 5000);
@@ -28,12 +28,12 @@ FROM (
   FROM (
     SELECT
       IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
-      bin.start AS bin,
+      bin.start / 1000 AS bin,
       SUM(bin.density) AS volume
     FROM (
       SELECT
         form_factor,
-        spreadBins(first_input.delay.histogram.bin) AS bins
+        spreadBins(largest_contentful_paint.histogram.bin) AS bins
       FROM
         `chrome-ux-report.all.${YYYYMM}`)
     CROSS JOIN

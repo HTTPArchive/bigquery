@@ -1,11 +1,27 @@
 #standardSQL
+# Fast FCP by device
+
+CREATE TEMP FUNCTION IS_GOOD (good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
+  good / (good + needs_improvement + poor) >= 0.75
+);
+
+CREATE TEMP FUNCTION IS_NON_ZERO (good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
+  good + needs_improvement + poor > 0
+);
+
 SELECT
-  REGEXP_REPLACE(yyyymm, '(\\d{4})(\\d{2})', '\\1_\\2_01') AS date,
-  UNIX_DATE(CAST(REGEXP_REPLACE(yyyymm, '(\\d{4})(\\d{2})', '\\1-\\2-01') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
+  REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\d{4})(\\d{2})', '\\1_\\2_01') AS date,
+  UNIX_DATE(CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\d{4})(\\d{2})', '\\1-\\2-01') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
   IF(device = 'desktop', 'desktop', 'mobile') AS client,
-  ROUND(SUM(fast_fcp) * 100 / (SUM(fast_fcp) + SUM(avg_fcp) + SUM(slow_fcp)), 2) AS percent
+  SAFE_DIVIDE(
+      COUNT(DISTINCT IF(
+          IS_GOOD(fast_fcp, avg_fcp, slow_fcp), origin, NULL)), 
+      COUNT(DISTINCT IF(
+          IS_NON_ZERO(fast_fcp, avg_fcp, slow_fcp), origin, NULL))) * 100 AS percent
 FROM
   `chrome-ux-report.materialized.device_summary`
+WHERE
+  device IN ('desktop','phone')
 GROUP BY
   date,
   timestamp,

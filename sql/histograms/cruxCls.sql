@@ -1,12 +1,12 @@
 #standardSQL
-CREATE TEMPORARY FUNCTION spreadBins(bins ARRAY<STRUCT<start INT64, `end` INT64, density FLOAT64>>)
-RETURNS ARRAY<STRUCT<client STRING, start INT64, density FLOAT64>>
+CREATE TEMPORARY FUNCTION spreadBins(bins ARRAY<STRUCT<start NUMERIC, `end` NUMERIC, density FLOAT64>>)
+RETURNS ARRAY<STRUCT<client STRING, start NUMERIC, density FLOAT64>>
 LANGUAGE js AS """
-  // Convert into 25ms bins and spread the density around.
-  const WIDTH = 25;
+  // Convert into 0.01 bins and spread the density around.
+  const WIDTH = 0.01;
   return (bins || []).reduce((bins, bin) => {
     bin.start = +bin.start;
-    bin.end = Math.min(bin.end, bin.start + 5000);
+    bin.end = Math.min(bin.end, bin.start + 10);
     const binWidth = bin.end - bin.start;
     for (let start = bin.start; start < bin.end; start += WIDTH) {
       bins.push({
@@ -33,7 +33,7 @@ FROM (
     FROM (
       SELECT
         form_factor,
-        spreadBins(first_input.delay.histogram.bin) AS bins
+        spreadBins(layout_instability.cumulative_layout_shift.histogram.bin) AS bins
       FROM
         `chrome-ux-report.all.${YYYYMM}`)
     CROSS JOIN

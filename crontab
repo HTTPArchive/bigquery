@@ -3,3 +3,5 @@
 
 0 10 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_har.sh chrome' >> /var/log/HA-import-har-chrome.log 2>&1
 0 11 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_har.sh android' >> /var/log/HA-import-har-android.log 2>&1
+
+0 7 15 * * /bin/bash -l -c 'cd /home/igrigorik/code && sql/generate_reports.sh -th `date -d "-1 month" "+\%Y_\%m_01"` -r "*crux*"' >> /var/log/crux_reruns.log 2>&1
