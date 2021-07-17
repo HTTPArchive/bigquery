@@ -107,9 +107,15 @@ else
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
 			if [[ $metric == crux* ]]; then
-				echo "CrUX queries do not support histograms for lens's so skipping lens"
-				continue
+				if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
+					echo "Using alternative crux lens join"
+					lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | tr '\n' ' ')"
+				else
+					echo "CrUX queries do not support histograms for this lens so skipping"
+					continue
+				fi
 			fi
+
 			result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
 				| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 				| sed  -e "s/\${YYYYMM}/$YYYYMM/g" \
