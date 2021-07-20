@@ -4,7 +4,7 @@ SELECT
 FROM
   `httparchive.summary_pages.${YYYY_MM_DD}_*`
 WHERE
-  rank <= 10000
+  rank <= 100000
 GROUP BY
   1,
   2

@@ -1,2 +1,2 @@
 WHERE
-  experimental.popularity.rank = 10000
+  experimental.popularity.rank <= 10000

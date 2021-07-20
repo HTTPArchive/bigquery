@@ -4,7 +4,7 @@ SELECT
 FROM
   `httparchive.summary_pages.*`
 WHERE
-  rank = 10000 AND
+  rank <= 10000 AND
   _TABLE_SUFFIX >= '2021_05_01' #Ranking only introduced in May 2021
 GROUP BY
   1,
