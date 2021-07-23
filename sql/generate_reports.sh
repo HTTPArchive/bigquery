@@ -186,7 +186,8 @@ else
 		if [[ $LENS != "" ]]; then
 
 			if [[ $(grep "httparchive.blink_features.usage" $query) ]]; then
-			    # blink_features do not support date_join so do full run for them
+			    # blink_features.usage need to be replace by blink_features.features for lens's
+                # They also don't benefit from data_join so just run in full.
 				if [[ -f sql/lens/$LENS/blink_timeseries.sql ]]; then
 					echo "Using alternative blink_timeseries lens join"
 					lens_join="$(cat sql/lens/$LENS/blink_timeseries.sql | tr '\n' ' ')"
