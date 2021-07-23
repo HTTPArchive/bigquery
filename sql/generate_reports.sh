@@ -186,32 +186,41 @@ else
 		if [[ $LENS != "" ]]; then
 
 			if [[ $(grep "httparchive.blink_features.usage" $query) ]]; then
-				echo "blink_features.usage queries do not support lens's so skipping lens"
-				continue
-			fi
-
-			lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
-			if [[ $metric == crux* ]]; then
-				echo "CrUX query so using alternative lens join"
-				lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) ON (origin || '\/' = url AND REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\\\\\\\d{4})(\\\\\\\\d{2})', '\\\\\\\\1_\\\\\\\\2_01') || '_' || IF(device = 'phone', 'mobile', device) = _TABLE_SUFFIX)"
-			fi
-
-			if [[ -n "${date_join}" ]]; then
-				if [[ $(grep -i "WHERE" $query) ]]; then
-                    # If WHERE clause already exists then add to it
-					result=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query \
-						| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
-						| $BQ_CMD)
+			    # blink_features do not support date_join so do full run for them
+				if [[ -f sql/lens/$LENS/blink_timeseries.sql ]]; then
+					echo "Using alternative blink_timeseries lens join"
+					lens_join="$(cat sql/lens/$LENS/blink_timeseries.sql | tr '\n' ' ')"
+                    result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+					| $BQ_CMD)
 				else
-                    # If WHERE clause doesn't exists then add it, before GROUP BY
-					result=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
-						| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
-						| $BQ_CMD)
+					echo "blink_features.usage queries not supported for this lens so skipping lens"
+					continue
 				fi
 			else
-				result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
-					| $BQ_CMD)
-			fi
+
+                lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
+                if [[ $metric == crux* ]]; then
+                    echo "CrUX query so using alternative lens join"
+                    lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) ON (origin || '\/' = url AND REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\\\\\\\d{4})(\\\\\\\\d{2})', '\\\\\\\\1_\\\\\\\\2_01') || '_' || IF(device = 'phone', 'mobile', device) = _TABLE_SUFFIX)"
+                fi
+
+                if [[ -n "${date_join}" ]]; then
+                    if [[ $(grep -i "WHERE" $query) ]]; then
+                        # If WHERE clause already exists then add to it
+                        result=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query \
+                            | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
+                            | $BQ_CMD)
+                    else
+                        # If WHERE clause doesn't exists then add it, before GROUP BY
+                        result=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
+                            | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
+                            | $BQ_CMD)
+                    fi
+                else
+                    result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
+                        | $BQ_CMD)
+                fi
+            fi
 
 		else
 			# blink_features do not support date_join so do full run for them
