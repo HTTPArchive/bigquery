@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import argparse
 from copy import deepcopy
 from datetime import datetime
+from hashlib import sha256
 import json
 import logging
 import re
@@ -107,8 +108,13 @@ def trim_request(request):
   return request
 
 
-def get_response_bodies(har):
-  """Parses response bodies from a HAR object."""
+def hash_url(url):
+  """Hashes a given URL to a process-stable integer value."""
+  return int(sha256(url.encode('utf-8')).hexdigest(), 16)
+
+
+def get_response_bodies_a(har):
+  """Parse response bodies if the URL hashes to an odd number."""
 
   if not har:
     return
@@ -119,6 +125,35 @@ def get_response_bodies(har):
     logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
     return
 
+  if hash_url(page_url) % 2 == 0:
+    return
+
+  return get_response_bodies(har)
+
+
+
+def get_response_bodies_b(har):
+  """Parse response bodies if the URL hashes to an even number."""
+
+  if not har:
+    return
+
+  page_url = get_page_url(har)
+
+  if not page_url:
+    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
+    return
+
+  if hash_url(page_url) % 2 == 1:
+    return
+
+  return get_response_bodies(har)
+
+
+def get_response_bodies(har):
+  """Parses response bodies from a HAR object."""
+
+  page_url = get_page_url(har)
   requests = har.get('log').get('entries')
 
   response_bodies = []
@@ -328,14 +363,21 @@ def run(argv=None):
         write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
-# Omit response bodies from the pipeline until we can make better use of sharding.
-#    (hars
-#      | 'MapResponseBodies' >> beam.FlatMap(get_response_bodies)
-#      | 'WriteResponseBodies' >> beam.io.WriteToBigQuery(
-#        get_bigquery_uri(known_args.input, 'response_bodies'),
-#        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
-#        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-#        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+    (hars
+      | 'MapResponseBodiesA' >> beam.FlatMap(get_response_bodies_a)
+      | 'WriteResponseBodiesA' >> beam.io.WriteToBigQuery(
+        get_bigquery_uri(known_args.input, 'response_bodies'),
+        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+    (hars
+      | 'MapResponseBodiesB' >> beam.FlatMap(get_response_bodies_b)
+      | 'WriteResponseBodiesB' >> beam.io.WriteToBigQuery(
+        get_bigquery_uri(known_args.input, 'response_bodies'),
+        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
     (hars
       | 'MapTechnologies' >> beam.FlatMap(get_technologies)
