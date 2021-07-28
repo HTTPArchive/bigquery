@@ -1,1 +1,1 @@
-apache-beam[gcp]==2.26
+apache-beam[gcp]==2.31
