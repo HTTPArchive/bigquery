@@ -171,7 +171,7 @@ else
 				if [[ "${max_date}" == "${YYYY_MM_DD}" || "${max_date}" > "${YYYY_MM_DD}" ]]; then
 					echo -e "Skipping $metric timeseries"
 					continue
-				elif [[ $(grep "httparchive.blink_features.usage" $query) ]]; then # blink needs a special join
+				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, unless it's a lens
 					date_join="yyyymmdd > REPLACE(\"$max_date\",\"_\",\"\")"
 					if [[ -n "$YYYY_MM_DD" ]]; then
 					# If a date is given, then only run up until then (in cse next month is mid run)
