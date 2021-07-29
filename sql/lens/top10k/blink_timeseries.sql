@@ -5,7 +5,7 @@ SELECT
   f.feature,
   f.type,
   COUNT(1) as num_urls,
-  MAX(total),
+  MAX(total) AS total_urls,
   COUNT(1) / max(total) as num_urls_pct
 FROM
   `httparchive.blink_features.features` f,
