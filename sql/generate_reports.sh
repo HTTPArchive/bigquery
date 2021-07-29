@@ -204,9 +204,9 @@ else
 					lens_join="$(cat sql/lens/$LENS/blink_timeseries.sql | tr '\n' ' ')"
 
 					if [[ -n "${date_join}" ]]; then
-                        result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-                            | sed -e "s/\(WHERE\)/\1 $date_join AND /" \
-                            | $BQ_CMD)
+						result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+							| sed -e "s/\(WHERE\)/\1 $date_join AND /" \
+							| $BQ_CMD)
 					else
 						result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
 						| $BQ_CMD)
@@ -224,9 +224,9 @@ else
 				fi
 
 				if [[ -n "${date_join}" ]]; then
-                    result=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query \
-                        | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
-                        | $BQ_CMD)
+					result=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
+						| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
+						| $BQ_CMD)
 				else
 					result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
 						| $BQ_CMD)
