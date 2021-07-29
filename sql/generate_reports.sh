@@ -206,13 +206,13 @@ else
 					if [[ -n "${date_join}" ]]; then
 						if [[ $(grep -i "WHERE" $query) ]]; then
 							# If WHERE clause already exists then add to it
-							result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query
+							result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
 								| sed -e "s/\(WHERE\)/\1 $date_join AND /" \
 								| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
 								| $BQ_CMD)
 						else
 							# If WHERE clause doesn't exists then add it, before GROUP BY
-							result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query
+							result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
 								| sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" \
 								| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
 								| $BQ_CMD)
