@@ -17,7 +17,7 @@ WHERE
   sp._TABLE_SUFFIX = t._TABLE_SUFFIX AND
   sp.url = f.url AND
   sp.rank <= 10000 AND
-  sp._TABLE_SUFFIX >= '2021_05_01' #Ranking only introduced in May 2021
+  sp._TABLE_SUFFIX >= '2021_05_01' /* Ranking only introduced in May 2021 */
 GROUP BY
   f.yyyymmdd,
   f.client,
