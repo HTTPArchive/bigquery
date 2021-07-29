@@ -114,7 +114,7 @@ else
 					echo "CrUX queries do not support histograms for this lens so skipping"
 					continue
 				fi
-			else
+
 				result=$(sed -e "s/\(\`chrome-ux-report[^\`]*\`\)/\1 $lens_join/" $query \
 					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 					| sed -e "s/\${YYYYMM}/$YYYYMM/g" \
