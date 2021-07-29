@@ -5,7 +5,7 @@ FROM
   `httparchive.summary_pages.*`
 WHERE
   rank <= 1000000 AND
-  _TABLE_SUFFIX >= '2021_05_01' /* Ranking only introduced in May 2021 */
+  _TABLE_SUFFIX >= '2021_05_01'
 GROUP BY
   1,
   2
