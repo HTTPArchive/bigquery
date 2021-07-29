@@ -24,8 +24,6 @@
 #   sql/get_bigquery_dates.sh runs pages | \
 #     xargs -I date sql/generate_reports.sh -h date
 #
-#   sql/get_bigquery_dates.sh runs pages | \
-#     xargs -I date sql/generate_report.sh -d date/cruxDcl.json
 
 set -eo pipefail
 
