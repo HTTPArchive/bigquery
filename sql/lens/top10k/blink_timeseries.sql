@@ -4,9 +4,9 @@ SELECT
   f.id,
   f.feature,
   f.type,
-  COUNT(1) as num_urls,
+  COUNT(1) AS num_urls,
   MAX(total) AS total_urls,
-  COUNT(1) / max(total) as num_urls_pct
+  SAFE_DIVIDE(COUNT(1), max(total)) AS num_urls_pct
 FROM
   `httparchive.blink_features.features` f,
   `httparchive.summary_pages.*` sp,
