@@ -17,7 +17,7 @@ WHERE
   sp._TABLE_SUFFIX = t._TABLE_SUFFIX AND
   sp.url = f.url AND
   sp.rank <= 100000 AND
-  f.yyyymmdd >= '2021-05-01'
+  f.yyyymmdd >= '2021-05-01' BLINK_DATE_JOIN
 GROUP BY
   f.yyyymmdd,
   f.client,

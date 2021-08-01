@@ -14,7 +14,7 @@
 #
 #   -f: Whether to force querying and updating even if the data exists.
 #
-#   -l: Optional name of the report lens to generate, eg "wordpress".
+#   -l: Optional name of the report lens to generate, eg "top10k".
 #
 #   -r: Optional name of the report files to generate, eg "*crux*".
 #
@@ -171,16 +171,22 @@ else
 				if [[ "${max_date}" == "${YYYY_MM_DD}" || "${max_date}" > "${YYYY_MM_DD}" ]]; then
 					echo -e "Skipping $metric timeseries"
 					continue
-				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, unless it's a lens
+				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
 					date_join="yyyymmdd > REPLACE(\"$max_date\",\"_\",\"\")"
 					if [[ -n "$YYYY_MM_DD" ]]; then
-					# If a date is given, then only run up until then (in cse next month is mid run)
+					# If a date is given, then only run up until then (incase next month is mid run)
 						date_join="${date_join} AND yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
+					fi
+				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
+					date_join="yyyymmdd > CAST(REPLACE(\"$max_date\",\"_\",\"-\") AS DATE)"
+					if [[ -n "$YYYY_MM_DD" ]]; then
+					# If a date is given, then only run up until then (incase next month is mid run)
+						date_join="${date_join} AND yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
 					fi
 				elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
 					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) > \"$max_date\""
 					if [[ -n "$YYYY_MM_DD" ]]; then
-						# If a date is given, then only run up until then (in cse next month is mid run)
+						# If a date is given, then only run up until then (incase next month is mid run)
 						date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 					fi
 				fi
@@ -203,13 +209,15 @@ else
 					echo "Using alternative blink_timeseries lens join"
 					lens_join="$(cat sql/lens/$LENS/blink_timeseries.sql | tr '\n' ' ')"
 
-					if [[ -n "${date_join}" ]]; then
+					# For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
+					if [[ -z "${date_join}" ]]; then
 						result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-							| sed -e "s/\(WHERE\)/\1 $date_join AND /" \
-							| $BQ_CMD)
-					else
-						result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+						| sed -e "s/ BLINK_DATE_JOIN//" \
 						| $BQ_CMD)
+					else
+						result=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+							| sed -e "s/\(BLINK_DATE_JOIN)/AND $date_join/" \
+							| $BQ_CMD)
 					fi
 				else
 					echo "blink_features.usage queries not supported for this lens so skipping lens"
