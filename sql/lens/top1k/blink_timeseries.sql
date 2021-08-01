@@ -1,5 +1,5 @@
 SELECT
-  f.yyyymmdd,
+  REGEXP_REPLACE(CAST(f.yyyymmdd AS STRING),'-','') AS yyyymmdd,
   f.client,
   f.id,
   f.feature,
@@ -10,14 +10,14 @@ SELECT
 FROM
   `httparchive.blink_features.features` f,
   `httparchive.summary_pages.*` sp,
-  (SELECT _TABLE_SUFFIX, COUNT(DISTINCT url) as total FROM `httparchive.summary_pages.*` WHERE rank <= 1000 and _TABLE_SUFFIX >= '2021_05_01' GROUP BY _TABLE_SUFFIX) AS t
+  (SELECT _TABLE_SUFFIX, COUNT(DISTINCT url) AS total FROM `httparchive.summary_pages.*` WHERE rank <= 1000 and _TABLE_SUFFIX >= '2021_05_01' GROUP BY _TABLE_SUFFIX) AS t
 WHERE
-  REPLACE(SUBSTRING(sp._TABLE_SUFFIX,1,10),'_','') = f.yyyymmdd AND
+  REGEXP_REPLACE(SUBSTRING(sp._TABLE_SUFFIX,1,10),'_','-') = CAST(f.yyyymmdd as STRING) AND
   SUBSTRING(sp._TABLE_SUFFIX,12) = f.client AND
   sp._TABLE_SUFFIX = t._TABLE_SUFFIX AND
   sp.url = f.url AND
   sp.rank <= 1000 AND
-  sp._TABLE_SUFFIX >= '2021_05_01'
+  f.yyyymmdd >= '2021-05-01'
 GROUP BY
   f.yyyymmdd,
   f.client,
