@@ -14,7 +14,7 @@
 #
 #   -f: Whether to force querying and updating even if the data exists.
 #
-#   -l: Optional name of the report lens to generate, eg "wordpress".
+#   -l: Optional name of the report lens to generate, eg "top10k".
 #
 #   -r: Optional name of the report files to generate, eg "*crux*".
 #
@@ -107,16 +107,27 @@ else
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
 			if [[ $metric == crux* ]]; then
-				echo "CrUX queries do not support histograms for lens's so skipping lens"
-				continue
+				if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
+					echo "Using alternative crux lens join"
+					lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | tr '\n' ' ')"
+				else
+					echo "CrUX queries do not support histograms for this lens so skipping"
+					continue
+				fi
+
+				result=$(sed -e "s/\(\`chrome-ux-report[^\`]*\`\)/\1 $lens_join/" $query \
+					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
+					| sed -e "s/\${YYYYMM}/$YYYYMM/g" \
+					| $BQ_CMD)
+			else
+				result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
+					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
+					| sed -e "s/\${YYYYMM}/$YYYYMM/g" \
+					| $BQ_CMD)
 			fi
-			result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
-				| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
-				| sed  -e "s/\${YYYYMM}/$YYYYMM/g" \
-				| $BQ_CMD)
 		else
 			result=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
-				| sed  -e "s/\${YYYYMM}/$YYYYMM/" \
+				| sed -e "s/\${YYYYMM}/$YYYYMM/" \
 				| $BQ_CMD)
 		fi
 		# Make sure the query succeeded.
@@ -160,17 +171,50 @@ else
 				if [[ "${max_date}" == "${YYYY_MM_DD}" || "${max_date}" > "${YYYY_MM_DD}" ]]; then
 					echo -e "Skipping $metric timeseries"
 					continue
+				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
+					date_join="yyyymmdd > REPLACE(\"$max_date\",\"_\",\"\")"
+					if [[ -n "$YYYY_MM_DD" ]]; then
+						# If a date is given, then only run up until then (in case next month is mid-run as don't wanna get just desktop data)
+						date_join="${date_join} AND yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
+					fi
+				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
+					date_join="yyyymmdd > CAST(REPLACE(\"$max_date\",\"_\",\"-\") AS DATE)"
+					if [[ -n "$YYYY_MM_DD" ]]; then
+						# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
+						date_join="${date_join} AND yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
+					fi
 				elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
 					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) > \"$max_date\""
 					if [[ -n "$YYYY_MM_DD" ]]; then
+						# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
 						date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 					fi
+				fi
+			fi
+		else
+			# Even if the file doesn't exist we only wanna run up until date given in case next month is mid-run as don't wanna get just desktop data
+			if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
+				if [[ -n "$YYYY_MM_DD" ]]; then
+					# If a date is given, then only run up until then (in case next month is mid-run as don't wanna get just desktop data)
+					date_join="yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
+				fi
+			elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
+				if [[ -n "$YYYY_MM_DD" ]]; then
+					# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
+					date_join="yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
+				fi
+			elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
+				if [[ -n "$YYYY_MM_DD" ]]; then
+					# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
+					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 				fi
 			fi
 		fi
 
 		if [[ -n "${date_join}" && -n "${max_date}" ]]; then
 			echo -e "Generating $metric timeseries in incremental mode from ${max_date} to ${YYYY_MM_DD}"
+		elif [[ -n "${date_join}" ]]; then
+			echo -e "Generating $metric timeseries from start until ${YYYY_MM_DD}"
 		else
 			echo -e "Generating $metric timeseries from start"
 		fi
@@ -180,45 +224,54 @@ else
 		if [[ $LENS != "" ]]; then
 
 			if [[ $(grep "httparchive.blink_features.usage" $query) ]]; then
-				echo "blink_features.usage queries do not support lens's so skipping lens"
-				continue
-			fi
+				# blink_features.usage need to be replace by blink_features.features for lenses
+				if [[ -f sql/lens/$LENS/blink_timeseries.sql ]]; then
+					echo "Using alternative blink_timeseries lens join"
+					lens_join="$(cat sql/lens/$LENS/blink_timeseries.sql | tr '\n' ' ')"
 
-			lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
-			if [[ $metric == crux* ]]; then
-				echo "CrUX query so using alternative lens join"
-				lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) ON (origin || '\/' = url AND REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\\\\\\\d{4})(\\\\\\\\d{2})', '\\\\\\\\1_\\\\\\\\2_01') || '_' || IF(device = 'phone', 'mobile', device) = _TABLE_SUFFIX)"
-			fi
+					# For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
+					if [[ -z "${date_join}" ]]; then
+						result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+						| sed -e "s/ BLINK_DATE_JOIN//g" \
+						| $BQ_CMD)
+					else
+						result=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+							| sed -e "s/BLINK_DATE_JOIN/AND $date_join/g" \
+							| $BQ_CMD)
+					fi
+				else
+					echo "blink_features.usage queries not supported for this lens so skipping lens"
+					continue
+				fi
+			else
 
-			if [[ -n "${date_join}" ]]; then
-				if [[ $(grep -i "WHERE" $query) ]]; then
-                    # If WHERE clause already exists then add to it
-					result=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query \
+				lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
+				if [[ $metric == crux* ]]; then
+					echo "CrUX query so using alternative lens join"
+					lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) ON (origin || '\/' = url AND REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\\\\\\\d{4})(\\\\\\\\d{2})', '\\\\\\\\1_\\\\\\\\2_01') || '_' || IF(device = 'phone', 'mobile', device) = _TABLE_SUFFIX)"
+				fi
+
+				if [[ -n "${date_join}" ]]; then
+					result=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
 						| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
 						| $BQ_CMD)
 				else
-                    # If WHERE clause doesn't exists then add it, before GROUP BY
-					result=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
-						| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
+					result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
 						| $BQ_CMD)
 				fi
-			else
-				result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
-					| $BQ_CMD)
 			fi
 
 		else
-			# blink_features do not support date_join so do full run for them
-			if [[ -z "${date_join}" || $(grep "httparchive.blink_features.usage" $query) ]]; then
+			if [[ -z "${date_join}" ]]; then
 				date_join=""
 				result=$(cat $query \
 					| $BQ_CMD)
 			elif [[ $(grep -i "WHERE" $query) ]]; then
-                # If WHERE clause already exists then add to it, before GROUP BY
+				# If WHERE clause already exists then add to it, before GROUP BY
 				result=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query \
 					| $BQ_CMD)
 			else
-                # If WHERE clause doesn't exists then add it, before GROUP BY
+				# If WHERE clause doesn't exists then add it, before GROUP BY
 				result=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
 					| $BQ_CMD)
 			fi
