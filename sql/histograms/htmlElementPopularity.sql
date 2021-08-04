@@ -17,7 +17,7 @@ try {
   COUNT(DISTINCT url) AS pages,
   total,
   COUNT(DISTINCT url) / total AS pct,
-  ARRAY_AGG(DISTINCT url LIMIT 10) AS sample_urls
+  ARRAY_TO_STRING(ARRAY_AGG(DISTINCT url LIMIT 5), ' ') AS sample_urls
 FROM
   `httparchive.pages.${YYYY_MM_DD}_*`
 JOIN
@@ -29,7 +29,7 @@ GROUP BY
   total,
   element
 HAVING
-  total > 10
+  COUNT(DISTINCT url) >= 10
 ORDER BY
   pages / total DESC,
   client
