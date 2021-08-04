@@ -174,27 +174,47 @@ else
 				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
 					date_join="yyyymmdd > REPLACE(\"$max_date\",\"_\",\"\")"
 					if [[ -n "$YYYY_MM_DD" ]]; then
-						# If a date is given, then only run up until then (incase next month is mid run)
+						# If a date is given, then only run up until then (in case next month is mid-run as don't wanna get just desktop data)
 						date_join="${date_join} AND yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
 					fi
 				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
 					date_join="yyyymmdd > CAST(REPLACE(\"$max_date\",\"_\",\"-\") AS DATE)"
 					if [[ -n "$YYYY_MM_DD" ]]; then
-						# If a date is given, then only run up until then (incase next month is mid run)
+						# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
 						date_join="${date_join} AND yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
 					fi
 				elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
 					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) > \"$max_date\""
 					if [[ -n "$YYYY_MM_DD" ]]; then
-						# If a date is given, then only run up until then (incase next month is mid run)
+						# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
 						date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 					fi
+				fi
+			fi
+		else
+			# Even if the file doesn't exist we only wanna run up until date given in case next month is mid-run as don't wanna get just desktop data
+			if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
+				if [[ -n "$YYYY_MM_DD" ]]; then
+					# If a date is given, then only run up until then (in case next month is mid-run as don't wanna get just desktop data)
+					date_join="yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
+				fi
+			elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
+				if [[ -n "$YYYY_MM_DD" ]]; then
+					# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
+					date_join="yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
+				fi
+			elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
+				if [[ -n "$YYYY_MM_DD" ]]; then
+					# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
+					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 				fi
 			fi
 		fi
 
 		if [[ -n "${date_join}" && -n "${max_date}" ]]; then
 			echo -e "Generating $metric timeseries in incremental mode from ${max_date} to ${YYYY_MM_DD}"
+		elif [[ -n "${date_join}" ]]; then
+			echo -e "Generating $metric timeseries from start until ${YYYY_MM_DD}"
 		else
 			echo -e "Generating $metric timeseries from start"
 		fi
