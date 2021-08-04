@@ -236,7 +236,7 @@ else
 						| $BQ_CMD)
 					else
 						result=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-							| sed -e "s/\(BLINK_DATE_JOIN)/AND $date_join/g" \
+							| sed -e "s/BLINK_DATE_JOIN/AND $date_join/g" \
 							| $BQ_CMD)
 					fi
 				else
