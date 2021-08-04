@@ -212,11 +212,11 @@ else
 					# For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
 					if [[ -z "${date_join}" ]]; then
 						result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-						| sed -e "s/ BLINK_DATE_JOIN//" \
+						| sed -e "s/ BLINK_DATE_JOIN//g" \
 						| $BQ_CMD)
 					else
 						result=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-							| sed -e "s/\(BLINK_DATE_JOIN)/AND $date_join/" \
+							| sed -e "s/\(BLINK_DATE_JOIN)/AND $date_join/g" \
 							| $BQ_CMD)
 					fi
 				else
