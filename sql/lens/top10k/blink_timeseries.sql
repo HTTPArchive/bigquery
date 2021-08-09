@@ -17,7 +17,8 @@ JOIN (
   FROM `httparchive.blink_features.features`
   WHERE
     rank <= 10000 AND
-    yyyymmdd >= '2021-05-01' {{ BLINK_DATE_JOIN }}
+    yyyymmdd >= '2021-05-01'
+    {{ BLINK_DATE_JOIN }}
   GROUP BY
     yyyymmdd,
     client
@@ -25,7 +26,8 @@ JOIN (
 USING (yyyymmdd, client)
 WHERE
   rank <= 10000 AND
-  yyyymmdd >= '2021-05-01' {{ BLINK_DATE_JOIN }}
+  yyyymmdd >= '2021-05-01'
+  {{ BLINK_DATE_JOIN }}
 GROUP BY
   yyyymmdd,
   client,
