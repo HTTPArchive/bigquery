@@ -1,12 +1,12 @@
 SELECT
-  REGEXP_REPLACE(CAST(yyyymmdd AS STRING),'-','') AS yyyymmdd,
+  REGEXP_REPLACE(CAST(yyyymmdd AS STRING), '-', '') AS yyyymmdd,
   client,
   id,
   feature,
   type,
-  COUNT(1) AS num_urls,
+  COUNT(0) AS num_urls,
   MAX(total) AS total_urls,
-  SAFE_DIVIDE(COUNT(1), max(total)) AS num_urls_pct
+  SAFE_DIVIDE(COUNT(0), max(total)) AS num_urls_pct
 FROM
   `httparchive.blink_features.features`
 JOIN

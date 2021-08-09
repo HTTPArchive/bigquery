@@ -34,4 +34,4 @@ GROUP BY
   client
 ORDER BY
   date DESC,
-  client;
+  client

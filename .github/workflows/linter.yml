@@ -33,7 +33,8 @@ jobs:
         env:
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_BASH: true
+          FILTER_REGEX_EXCLUDE: hyyparchive_schema.sql
+          #VALIDATE_BASH: true
           VALIDATE_JAVASCRIPT_ES: true
           VALIDATE_JSON: true
           VALIDATE_MD: true

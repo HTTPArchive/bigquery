@@ -15,13 +15,13 @@ SELECT
   IF(device = 'desktop', 'desktop', 'mobile') AS client,
   SAFE_DIVIDE(
       COUNT(DISTINCT IF(
-          IS_POOR(fast_lcp, avg_lcp, slow_lcp), origin, NULL)), 
+          IS_POOR(fast_lcp, avg_lcp, slow_lcp), origin, NULL)),
       COUNT(DISTINCT IF(
           IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp), origin, NULL))) * 100 AS percent
 FROM
   `chrome-ux-report.materialized.device_summary`
 WHERE
-  device IN ('desktop','phone')
+  device IN ('desktop', 'phone')
     AND yyyymm >= 201909
 GROUP BY
   date,

@@ -1,6 +1,6 @@
 #standardSQL
 CREATE TEMPORARY FUNCTION countVulnerabilities(report STRING)
-RETURNS INT64 LANGUAGE js AS  """
+RETURNS INT64 LANGUAGE js AS """
   try {
     const $ = JSON.parse(report);
     const audit = $.audits['no-vulnerable-libraries'];

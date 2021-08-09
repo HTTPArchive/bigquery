@@ -3,7 +3,7 @@
 #
 # We measure "ability to use" as well as "actual use", as HTTP Archive is a
 # cold crawl and so less likely to use HTTP/3 which requires prior visits.
-# 
+#
 # For "able to use" we look at the alt-svc response header.
 #
 # We also only measure official HTTP/3 (ALPN h3, h3-29) and not gQUIC or other
@@ -17,8 +17,8 @@ SELECT
   ROUND(SUM(IF(respHttpVersion IN ('HTTP/3', 'h3', 'h3-29')
                 OR reqHttpVersion IN ('HTTP/3', 'h3', 'h3-29')
                 OR REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3=%'
-                OR REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3-29=%'
-              , 1, 0)) * 100 / COUNT(0), 2) AS percent
+                OR REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3-29=%',
+              1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM
   `httparchive.summary_requests.*`
 WHERE
