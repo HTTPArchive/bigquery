@@ -18,7 +18,7 @@ JOIN (
   WHERE
     rank <= 10000 AND
     yyyymmdd >= '2021-05-01'
-    {{ BLINK_DATE_JOIN }}
+{{ BLINK_DATE_JOIN }}
   GROUP BY
     yyyymmdd,
     client
@@ -27,7 +27,7 @@ USING (yyyymmdd, client)
 WHERE
   rank <= 10000 AND
   yyyymmdd >= '2021-05-01'
-  {{ BLINK_DATE_JOIN }}
+{{ BLINK_DATE_JOIN }}
 GROUP BY
   yyyymmdd,
   client,
