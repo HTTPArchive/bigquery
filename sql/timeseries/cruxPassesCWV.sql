@@ -23,7 +23,7 @@ SELECT
 FROM
   `chrome-ux-report.materialized.device_summary`
 WHERE
-  device IN ('desktop','phone')
+  device IN ('desktop', 'phone')
   AND yyyymm > 201909
   AND p75_lcp IS NOT NULL AND p75_cls IS NOT NULL /* Must have LCP and CLS */
 GROUP BY

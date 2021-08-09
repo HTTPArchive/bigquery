@@ -109,7 +109,7 @@ else
 			if [[ $metric == crux* ]]; then
 				if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
 					echo "Using alternative crux lens join"
-					lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | tr '\n' ' ')"
+					lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | sed -e "s/--noqa: disable=PRS//g" | tr '\n' ' ')"
 				else
 					echo "CrUX queries do not support histograms for this lens so skipping"
 					continue
@@ -237,11 +237,11 @@ else
 					# For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
 					if [[ -z "${date_join}" ]]; then
 						result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-						| sed -e "s/ BLINK_DATE_JOIN//g" \
+						| sed -e "s/ {{ BLINK_DATE_JOIN }}//g" \
 						| $BQ_CMD)
 					else
 						result=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-							| sed -e "s/BLINK_DATE_JOIN/AND $date_join/g" \
+							| sed -e "s/{{ BLINK_DATE_JOIN }}/AND $date_join/g" \
 							| $BQ_CMD)
 					fi
 				else
