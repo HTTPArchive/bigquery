@@ -14,10 +14,10 @@ SELECT
   UNIX_DATE(CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\d{4})(\\d{2})', '\\1-\\2-01') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
   IF(device = 'desktop', 'desktop', 'mobile') AS client,
   SAFE_DIVIDE(
-      COUNT(DISTINCT IF(
-          IS_GOOD(fast_fp, avg_fp, slow_fp), origin, NULL)),
-      COUNT(DISTINCT IF(
-          IS_NON_ZERO(fast_fp, avg_fp, slow_fp), origin, NULL))) * 100 AS percent
+    COUNT(DISTINCT IF(
+        IS_GOOD(fast_fp, avg_fp, slow_fp), origin, NULL)),
+    COUNT(DISTINCT IF(
+        IS_NON_ZERO(fast_fp, avg_fp, slow_fp), origin, NULL))) * 100 AS percent
 FROM
   `chrome-ux-report.materialized.device_summary`
 WHERE

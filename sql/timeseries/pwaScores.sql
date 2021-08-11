@@ -28,7 +28,7 @@ FROM (
   WHERE
     report IS NOT NULL
     AND (JSON_EXTRACT(report, "$.audits.service-worker.score") = 'true'
-         OR JSON_EXTRACT(report, "$.audits.service-worker.score") = '1')
+                      OR JSON_EXTRACT(report, "$.audits.service-worker.score") = '1')
 )
 GROUP BY
   date,
