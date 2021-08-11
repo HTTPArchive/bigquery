@@ -16,7 +16,7 @@ FROM (
       IFNULL(
         JSON_EXTRACT(report, "$.audits.interactive.rawValue"),
         JSON_EXTRACT(report, "$.audits.consistently-interactive.rawValue")
-        )
+      )
       ) AS FLOAT64) / 1000 AS value
   FROM
     `httparchive.lighthouse.*`

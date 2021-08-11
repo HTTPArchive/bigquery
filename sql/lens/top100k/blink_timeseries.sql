@@ -10,19 +10,19 @@ SELECT
 FROM
   `httparchive.blink_features.features`
 JOIN
- (
-  SELECT
-    yyyymmdd,
-    client,
-    COUNT(DISTINCT url) AS total
-  FROM `httparchive.blink_features.features`
-  WHERE
-    rank <= 100000 AND
-    yyyymmdd >= '2021-05-01'
+  (
+    SELECT
+      yyyymmdd,
+      client,
+      COUNT(DISTINCT url) AS total
+    FROM `httparchive.blink_features.features`
+    WHERE
+      rank <= 100000 AND
+      yyyymmdd >= '2021-05-01'
 {{ BLINK_DATE_JOIN }}
-  GROUP BY
-    yyyymmdd,
-    client
+    GROUP BY
+      yyyymmdd,
+      client
   )
 USING (yyyymmdd, client)
 WHERE
