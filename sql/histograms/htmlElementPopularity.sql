@@ -11,7 +11,7 @@ try {
 }
 ''';
 
- SELECT
+SELECT
   _TABLE_SUFFIX AS client,
   element,
   COUNT(DISTINCT url) AS pages,
