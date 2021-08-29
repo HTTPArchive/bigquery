@@ -13,7 +13,7 @@ FROM
     FROM
       `httparchive.requests.*`
     WHERE
-      1=1 /* Dummy join to allow date joins on this subquery for cost/time savings */
+      1=1 /* Dummy WHERE clause to allow date joins on this subquery for cost/time savings */
   )
 GROUP BY
   date,
