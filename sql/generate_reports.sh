@@ -92,7 +92,7 @@ else
 	# Run all histogram queries.
 	for query in sql/histograms/$REPORTS.sql; do
 
-		if [[ -z $query ]]; then
+		if [[ ! -f $query ]]; then
 			echo "Nothing to do"
 			continue;
 		fi
@@ -170,7 +170,7 @@ else
 	# Run all timeseries queries.
 	for query in sql/timeseries/$REPORTS.sql; do
 
-		if [[ -z $query ]]; then
+		if [[ ! -f $query ]]; then
 			echo "Nothing to do"
 			continue;
 		fi
