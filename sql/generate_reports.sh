@@ -123,27 +123,27 @@ else
 					continue
 				fi
 
-				query=$(sed -e "s/\(\`chrome-ux-report[^\`]*\`\)/\1 $lens_join/" $query \
+				sql=$(sed -e "s/\(\`chrome-ux-report[^\`]*\`\)/\1 $lens_join/" $query \
 					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 					| sed -e "s/\${YYYYMM}/$YYYYMM/g")
 			else
-				query=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
+				sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
 					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
 					| sed -e "s/\${YYYYMM}/$YYYYMM/g")
 			fi
 		else
-			query=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
+			sql=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
 				| sed -e "s/\${YYYYMM}/$YYYYMM/")
 		fi
 
 		if [ ${VERBOSE} -eq 1 ]; then
 			echo "Running this query:"
-			echo $query
+			printf "${sql}"
 		fi
 
 		# Run the histogram query on BigQuery.
 		START_TIME=$SECONDS
-		result=$(cat $query | $BQ_CMD)
+		result=$(echo "${sql}" | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
@@ -257,10 +257,10 @@ else
 
 					# For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
 					if [[ -z "${date_join}" ]]; then
-						query=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+						sql=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
 						| sed -e "s/ {{ BLINK_DATE_JOIN }}//g")
 					else
-						query=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+						sql=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
 							| sed -e "s/{{ BLINK_DATE_JOIN }}/AND $date_join/g")
 					fi
 				else
@@ -278,15 +278,15 @@ else
 				if [[ -n "${date_join}" ]]; then
 					if [[ $(grep -i "WHERE" $query) ]]; then
 						# If WHERE clause already exists then add to it, before GROUP BY
-						query=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
+						sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
 							| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
 					else
 						# If WHERE clause doesn't exists then add it, before GROUP BY
-						query=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
+						sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
 							| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
 					fi
 				else
-					query=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query)
+					sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query)
 				fi
 			fi
 
@@ -294,22 +294,22 @@ else
 			if [[ -n "${date_join}" ]]; then
 				if [[ $(grep -i "WHERE" $query) ]]; then
 					# If WHERE clause already exists then add to it, before GROUP BY
-					query=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
+					sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
 				else
 					# If WHERE clause doesn't exists then add it, before GROUP BY
-					query=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query)
+					sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query)
 				fi
 			fi
 		fi
 
 		if [ ${VERBOSE} -eq 1 ]; then
 			echo "Running this query:"
-			echo $query
+			printf "${sql}"
 		fi
 
 		# Run the timeseries query on BigQuery.
 		START_TIME=$SECONDS
-		result=$(cat $query | $BQ_CMD)
+		result=$(echo "${sql}" | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
