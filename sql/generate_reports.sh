@@ -27,9 +27,10 @@ GENERATE_HISTOGRAM=0
 GENERATE_TIMESERIES=0
 LENS=""
 REPORTS="*"
+VERBOSE=0
 
 # Read the flags.
-while getopts ":fth:l:r:" opt; do
+while getopts ":ftvh:l:r:" opt; do
 	case "${opt}" in
 		h)
 			GENERATE_HISTOGRAM=1
@@ -39,6 +40,9 @@ while getopts ":fth:l:r:" opt; do
 			;;
 		t)
 			GENERATE_TIMESERIES=1
+			;;
+		v)
+			VERBOSE=1
 			;;
 		f)
 			FORCE=1
@@ -87,6 +91,12 @@ else
 
 	# Run all histogram queries.
 	for query in sql/histograms/$REPORTS.sql; do
+
+		if [[ ! -f $query ]]; then
+			echo "Nothing to do"
+			continue;
+		fi
+
 		# Extract the metric name from the file path.
 		# For example, `sql/histograms/foo.sql` will produce `foo`.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
@@ -95,15 +105,13 @@ else
 		gsutil ls $gs_url &> /dev/null
 		if [ $? -eq 0 ] && [ $FORCE -eq 0 ]; then
 			# The file already exists, so skip the query.
-			echo -e "Skipping $metric histogram"
+			echo -e "Skipping $metric histogram as already exists"
 			continue
 		fi
 
 		echo -e "Generating $metric histogram"
 
 		# Replace the date template in the query.
-		# Run the query on BigQuery.
-		START_TIME=$SECONDS
 		if [[ $LENS != "" ]]; then
 			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
 			if [[ $metric == crux* ]]; then
@@ -115,21 +123,28 @@ else
 					continue
 				fi
 
-				result=$(sed -e "s/\(\`chrome-ux-report[^\`]*\`\)/\1 $lens_join/" $query \
+				sql=$(sed -e "s/\(\`chrome-ux-report[^\`]*\`\)/\1 $lens_join/" $query \
 					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
-					| sed -e "s/\${YYYYMM}/$YYYYMM/g" \
-					| $BQ_CMD)
+					| sed -e "s/\${YYYYMM}/$YYYYMM/g")
 			else
-				result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
+				sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
 					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
-					| sed -e "s/\${YYYYMM}/$YYYYMM/g" \
-					| $BQ_CMD)
+					| sed -e "s/\${YYYYMM}/$YYYYMM/g")
 			fi
 		else
-			result=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
-				| sed -e "s/\${YYYYMM}/$YYYYMM/" \
-				| $BQ_CMD)
+			sql=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
+				| sed -e "s/\${YYYYMM}/$YYYYMM/")
 		fi
+
+		if [ ${VERBOSE} -eq 1 ]; then
+			echo "Running this query:"
+			printf "${sql}\n"
+		fi
+
+		# Run the histogram query on BigQuery.
+		START_TIME=$SECONDS
+		result=$(printf "${sql}" | $BQ_CMD)
+
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
 			ELAPSED_TIME=$(($SECONDS - $START_TIME))
@@ -154,6 +169,12 @@ else
 
 	# Run all timeseries queries.
 	for query in sql/timeseries/$REPORTS.sql; do
+
+		if [[ ! -f $query ]]; then
+			echo "Nothing to do"
+			continue;
+		fi
+
 		# Extract the metric name from the file path.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
 
@@ -189,6 +210,9 @@ else
 							date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 						fi
 					fi
+
+					echo -e "Generating $metric timeseries in incremental mode from ${max_date} to ${YYYY_MM_DD}"
+
 				else
 					echo -e "Skipping $metric timeseries as ${YYYY_MM_DD} already exists in the data. Run in force mode (-f) if you want to rerun."
 					continue
@@ -204,6 +228,8 @@ else
 					# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
 					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 				fi
+
+				echo -e "Force Mode=${FORCE}. Generating $metric timeseries from start until ${YYYY_MM_DD}."
 			fi
 		elif [[ -n "$YYYY_MM_DD" ]]; then
 			# Even if the file doesn't exist we only wanna run up until date given in case next month is mid-run as don't wanna get just desktop data
@@ -214,18 +240,13 @@ else
 			elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
 				date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 			fi
-		fi
 
-		if [[ -n "${date_join}" && -n "${max_date}" ]]; then
-			echo -e "Generating $metric timeseries in incremental mode from ${max_date} to ${YYYY_MM_DD}"
-		elif [[ -n "${date_join}" ]]; then
-			echo -e "Generating $metric timeseries from start until ${YYYY_MM_DD}"
+			echo -e "Timeseries does not exist. Generating $metric timeseries from start until ${YYYY_MM_DD}"
+
 		else
-			echo -e "Generating $metric timeseries from start"
+			echo -e "Timeseries does not exist. Generating $metric timeseries from start"
 		fi
 
-		# Run the query on BigQuery.
-		START_TIME=$SECONDS
 		if [[ $LENS != "" ]]; then
 
 			if [[ $(grep "httparchive.blink_features.usage" $query) ]]; then
@@ -236,13 +257,11 @@ else
 
 					# For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
 					if [[ -z "${date_join}" ]]; then
-						result=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-						| sed -e "s/ {{ BLINK_DATE_JOIN }}//g" \
-						| $BQ_CMD)
+						sql=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+						| sed -e "s/ {{ BLINK_DATE_JOIN }}//g")
 					else
-						result=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-							| sed -e "s/{{ BLINK_DATE_JOIN }}/AND $date_join/g" \
-							| $BQ_CMD)
+						sql=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+							| sed -e "s/{{ BLINK_DATE_JOIN }}/AND $date_join/g")
 					fi
 				else
 					echo "blink_features.usage queries not supported for this lens so skipping lens"
@@ -259,36 +278,38 @@ else
 				if [[ -n "${date_join}" ]]; then
 					if [[ $(grep -i "WHERE" $query) ]]; then
 						# If WHERE clause already exists then add to it, before GROUP BY
-						result=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
-							| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
-							| $BQ_CMD)
+						sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
+							| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
 					else
 						# If WHERE clause doesn't exists then add it, before GROUP BY
-						result=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
-							| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" \
-							| $BQ_CMD)
+						sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
+							| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
 					fi
 				else
-					result=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
-						| $BQ_CMD)
+					sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query)
 				fi
 			fi
 
 		else
-			if [[ -z "${date_join}" ]]; then
-				date_join=""
-				result=$(cat $query \
-					| $BQ_CMD)
-			elif [[ $(grep -i "WHERE" $query) ]]; then
-				# If WHERE clause already exists then add to it, before GROUP BY
-				result=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query \
-					| $BQ_CMD)
-			else
-				# If WHERE clause doesn't exists then add it, before GROUP BY
-				result=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
-					| $BQ_CMD)
+			if [[ -n "${date_join}" ]]; then
+				if [[ $(grep -i "WHERE" $query) ]]; then
+					# If WHERE clause already exists then add to it, before GROUP BY
+					sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
+				else
+					# If WHERE clause doesn't exists then add it, before GROUP BY
+					sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query)
+				fi
 			fi
 		fi
+
+		if [ ${VERBOSE} -eq 1 ]; then
+			echo "Running this query:"
+			printf "${sql}\n"
+		fi
+
+		# Run the timeseries query on BigQuery.
+		START_TIME=$SECONDS
+		result=$(printf "${sql}" | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
