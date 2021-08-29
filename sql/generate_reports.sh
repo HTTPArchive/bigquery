@@ -138,7 +138,7 @@ else
 
 		if [ ${VERBOSE} -eq 1 ]; then
 			echo "Running this query:"
-			printf "${sql}"
+			printf "${sql}\n"
 		fi
 
 		# Run the histogram query on BigQuery.
@@ -304,7 +304,7 @@ else
 
 		if [ ${VERBOSE} -eq 1 ]; then
 			echo "Running this query:"
-			printf "${sql}"
+			printf "${sql}\n"
 		fi
 
 		# Run the timeseries query on BigQuery.
