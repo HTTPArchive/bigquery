@@ -99,7 +99,7 @@ else
 		gsutil ls $gs_url &> /dev/null
 		if [ $? -eq 0 ] && [ $FORCE -eq 0 ]; then
 			# The file already exists, so skip the query.
-			echo -e "Skipping $metric histogram"
+			echo -e "Skipping $metric histogram as already exists"
 			continue
 		fi
 
@@ -279,14 +279,14 @@ else
 			fi
 
 		else
-			if [[ -z "${date_join}" ]]; then
-				# Leave query as it is
-			elif [[ $(grep -i "WHERE" $query) ]]; then
-				# If WHERE clause already exists then add to it, before GROUP BY
-				query=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
-			else
-				# If WHERE clause doesn't exists then add it, before GROUP BY
-				query=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query)
+			if [[ -n "${date_join}" ]];
+				if [[ $(grep -i "WHERE" $query) ]]; then
+					# If WHERE clause already exists then add to it, before GROUP BY
+					query=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
+				else
+					# If WHERE clause doesn't exists then add it, before GROUP BY
+					query=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query)
+				fi
 			fi
 		fi
 
