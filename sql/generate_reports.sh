@@ -30,7 +30,7 @@ REPORTS="*"
 VERBOSE=0
 
 # Read the flags.
-while getopts ":fth:l:r:" opt; do
+while getopts ":ftvh:l:r:" opt; do
 	case "${opt}" in
 		h)
 			GENERATE_HISTOGRAM=1
@@ -143,7 +143,7 @@ else
 
 		# Run the histogram query on BigQuery.
 		START_TIME=$SECONDS
-		result=$(cat $QUERY | $BQ_CMD)
+		result=$(cat $query | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
@@ -309,7 +309,7 @@ else
 
 		# Run the timeseries query on BigQuery.
 		START_TIME=$SECONDS
-		result=$(cat $QUERY | $BQ_CMD)
+		result=$(cat $query | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
