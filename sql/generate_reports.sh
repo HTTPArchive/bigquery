@@ -143,7 +143,7 @@ else
 
 		# Run the histogram query on BigQuery.
 		START_TIME=$SECONDS
-		result=$(echo "${sql}" | $BQ_CMD)
+		result=$(printf "${sql}" | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
@@ -309,7 +309,7 @@ else
 
 		# Run the timeseries query on BigQuery.
 		START_TIME=$SECONDS
-		result=$(echo "${sql}" | $BQ_CMD)
+		result=$(printf "${sql}" | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
