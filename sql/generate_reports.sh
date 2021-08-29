@@ -91,6 +91,12 @@ else
 
 	# Run all histogram queries.
 	for query in sql/histograms/$REPORTS.sql; do
+
+		if [[ -z $query ]]; then
+			echo "Nothing to do"
+			continue;
+		fi
+
 		# Extract the metric name from the file path.
 		# For example, `sql/histograms/foo.sql` will produce `foo`.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
@@ -163,6 +169,12 @@ else
 
 	# Run all timeseries queries.
 	for query in sql/timeseries/$REPORTS.sql; do
+
+		if [[ -z $query ]]; then
+			echo "Nothing to do"
+			continue;
+		fi
+
 		# Extract the metric name from the file path.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
 
@@ -279,7 +291,7 @@ else
 			fi
 
 		else
-			if [[ -n "${date_join}" ]];
+			if [[ -n "${date_join}" ]]; then
 				if [[ $(grep -i "WHERE" $query) ]]; then
 					# If WHERE clause already exists then add to it, before GROUP BY
 					query=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
