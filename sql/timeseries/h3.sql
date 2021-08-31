@@ -14,10 +14,13 @@ SELECT
   SUBSTR(_TABLE_SUFFIX, 0, 10) AS date,
   UNIX_DATE(CAST(REPLACE(SUBSTR(_TABLE_SUFFIX, 0, 10), '_', '-') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
   IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
-  ROUND(SUM(IF(respHttpVersion IN ('HTTP/3', 'h3', 'h3-29')
-                                   OR reqHttpVersion IN ('HTTP/3', 'h3', 'h3-29')
-        OR REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3=%'
-        OR REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3-29=%',
+  ROUND(
+    SUM(
+      IF(
+        respHttpVersion IN ('HTTP/3', 'h3', 'h3-29') OR
+        reqHttpVersion IN ('HTTP/3', 'h3', 'h3-29') OR
+        REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3=%' OR
+        REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3-29=%',
         1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM
   `httparchive.summary_requests.*`
