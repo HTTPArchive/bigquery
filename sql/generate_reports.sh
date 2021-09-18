@@ -95,13 +95,13 @@ else
 
 		if [[ $LENS == "" ]]; then
 			LENSES=("")
-			echo "Generating without lens"
+			echo "Generating ${metric} report for base"
 		elif [[ $LENS == "ALL" ]]; then
 			LENSES=("" $(ls sql/lens))
-			echo "Generating without lens and all lenses"
+			echo "Generating ${metric} report for base and all lenses"
 		else
 			LENSES=($LENS)
-			echo "Generating one lens"
+			echo "Generating ${metric} report for one lens"
 		fi
 
 		for LENS in "${LENSES[@]}"
@@ -196,13 +196,13 @@ else
 
 		if [[ $LENS == "" ]]; then
 			LENSES=("")
-			echo "Generating without lens"
+			echo "Generating ${metric} report for base"
 		elif [[ $LENS == "ALL" ]]; then
 			LENSES=("" $(ls sql/lens))
-			echo "Generating without lens and all lenses"
+			echo "Generating ${metric} report for base and all lenses"
 		else
 			LENSES=($LENS)
-			echo "Generating one lens"
+			echo "Generating ${metric} report for one lens"
 		fi
 
 		for LENS in "${LENSES[@]}"
