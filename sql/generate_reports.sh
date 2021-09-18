@@ -111,7 +111,7 @@ else
 			gsutil ls $gs_url &> /dev/null
 			if [ $? -eq 0 ] && [ $FORCE -eq 0 ]; then
 				# The file already exists, so skip the query.
-				echo -e "Skipping $metric histogram as already exists"
+				echo -e "Skipping $gs_lens_dir$YYYY_MM_DD/$metric histogram as already exists"
 				continue
 			fi
 
@@ -254,10 +254,10 @@ else
 							fi
 						fi
 
-						echo -e "Generating $metric timeseries in incremental mode from ${max_date} to ${YYYY_MM_DD}"
+						echo -e "Generating $gs_lens_dir$metric timeseries in incremental mode from ${max_date} to ${YYYY_MM_DD}"
 
 					else
-						echo -e "Skipping $metric timeseries as ${YYYY_MM_DD} already exists in the data. Run in force mode (-f) if you want to rerun."
+						echo -e "Skipping $gs_lens_dir$metric timeseries as ${YYYY_MM_DD} already exists in the data. Run in force mode (-f) if you want to rerun."
 						continue
 					fi
 
