@@ -25,7 +25,7 @@ BQ_CMD="bq --format prettyjson --project_id httparchive query --max_rows 1000000
 FORCE=0
 GENERATE_HISTOGRAM=0
 GENERATE_TIMESERIES=0
-LENS=""
+LENS_ARG=""
 REPORTS="*"
 VERBOSE=0
 
@@ -48,7 +48,7 @@ while getopts ":ftvh:l:r:" opt; do
 			FORCE=1
 			;;
 		l)
-			LENS=${OPTARG}
+			LENS_ARG=${OPTARG}
 			;;
 		r)
 			REPORTS=${OPTARG}
@@ -93,14 +93,14 @@ else
 
 		echo -e "Generating $metric histogram"
 
-		if [[ $LENS == "" ]]; then
+		if [[ "${LENS_ARG}" == "" ]]; then
 			LENSES=("")
 			echo "Generating ${metric} report for base"
-		elif [[ $LENS == "ALL" ]]; then
+		elif [[ "${LENS_ARG}" == "ALL" ]]; then
 			LENSES=("" $(ls sql/lens))
 			echo "Generating ${metric} report for base and all lenses"
 		else
-			LENSES=($LENS)
+			LENSES=("${LENS_ARG}")
 			echo "Generating ${metric} report for one lens"
 		fi
 
@@ -194,14 +194,14 @@ else
 		# Extract the metric name from the file path.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
 
-		if [[ $LENS == "" ]]; then
+		if [[ "${LENS_ARG}" == "" ]]; then
 			LENSES=("")
 			echo "Generating ${metric} report for base"
-		elif [[ $LENS == "ALL" ]]; then
+		elif [[ "${LENS_ARG}" == "ALL" ]]; then
 			LENSES=("" $(ls sql/lens))
 			echo "Generating ${metric} report for base and all lenses"
 		else
-			LENSES=($LENS)
+			LENSES=("${LENS_ARG}")
 			echo "Generating ${metric} report for one lens"
 		fi
 
