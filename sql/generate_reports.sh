@@ -122,7 +122,6 @@ else
 				# The file already exists, so skip the query.
 				echo -e "Skipping $gs_lens_dir$YYYY_MM_DD/$metric histogram as already exists"
 				continue
-			else
 			fi
 
 			# Replace the date template in the query.
