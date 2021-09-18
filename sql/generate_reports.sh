@@ -107,14 +107,6 @@ else
 		for LENS in "${LENSES[@]}"
 		do
 
-			gs_url="gs://httparchive/reports/$gs_lens_dir$YYYY_MM_DD/${metric}.json"
-			gsutil ls $gs_url &> /dev/null
-			if [ $? -eq 0 ] && [ $FORCE -eq 0 ]; then
-				# The file already exists, so skip the query.
-				echo -e "Skipping $gs_lens_dir$YYYY_MM_DD/$metric histogram as already exists"
-				continue
-			fi
-
 			gs_lens_dir=""
 			if [[ $LENS != "" ]]; then
 				if [ ! -f "sql/lens/$LENS/histograms.sql" ] || [ ! -f "sql/lens/$LENS/timeseries.sql" ]; then
@@ -125,6 +117,14 @@ else
 				gs_lens_dir="$LENS/"
 			else
 				echo -e "Generating ${metric} report for base (no lens)"
+			fi
+
+			gs_url="gs://httparchive/reports/$gs_lens_dir$YYYY_MM_DD/${metric}.json"
+			gsutil ls $gs_url &> /dev/null
+			if [ $? -eq 0 ] && [ $FORCE -eq 0 ]; then
+				# The file already exists, so skip the query.
+				echo -e "Skipping $gs_lens_dir$YYYY_MM_DD/$metric histogram as already exists"
+				continue
 			fi
 
 			# Replace the date template in the query.
