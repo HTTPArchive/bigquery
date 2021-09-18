@@ -113,10 +113,7 @@ else
 					echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
 					exit 1
 				fi
-				echo -e "Generating ${metric} report for $LENS"
 				gs_lens_dir="$LENS/"
-			else
-				echo -e "Generating ${metric} report for base (no lens)"
 			fi
 
 			gs_url="gs://httparchive/reports/$gs_lens_dir$YYYY_MM_DD/${metric}.json"
@@ -125,10 +122,12 @@ else
 				# The file already exists, so skip the query.
 				echo -e "Skipping $gs_lens_dir$YYYY_MM_DD/$metric histogram as already exists"
 				continue
+			else
 			fi
 
 			# Replace the date template in the query.
 			if [[ $LENS != "" ]]; then
+				echo -e "Generating ${metric} report for $LENS"
 				lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
 				if [[ $metric == crux* ]]; then
 					if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
@@ -148,6 +147,7 @@ else
 						| sed -e "s/\${YYYYMM}/$YYYYMM/g")
 				fi
 			else
+				echo -e "Generating ${metric} report for base (no lens)"
 				sql=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
 					| sed -e "s/\${YYYYMM}/$YYYYMM/")
 			fi
@@ -215,10 +215,7 @@ else
 					echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
 					exit 1
 				fi
-				echo -e "Generating ${metric} report for $LENS"
 				gs_lens_dir="$LENS/"
-			else
-				echo -e "Generating ${metric} report for base (no lens)"
 			fi
 
 			date_join=""
@@ -272,7 +269,7 @@ else
 						date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 					fi
 
-					echo -e "Force Mode=${FORCE}. Generating $metric timeseries from start until ${YYYY_MM_DD}."
+					echo -e "Force Mode=${FORCE}. Generating $gs_lens_dir$metric timeseries from start until ${YYYY_MM_DD}."
 				fi
 			elif [[ -n "$YYYY_MM_DD" ]]; then
 				# Even if the file doesn't exist we only wanna run up until date given in case next month is mid-run as don't wanna get just desktop data
@@ -284,10 +281,10 @@ else
 					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
 				fi
 
-				echo -e "Timeseries does not exist. Generating $metric timeseries from start until ${YYYY_MM_DD}"
+				echo -e "Timeseries does not exist. Generating $gs_lens_dir$metric timeseries from start until ${YYYY_MM_DD}"
 
 			else
-				echo -e "Timeseries does not exist. Generating $metric timeseries from start"
+				echo -e "Timeseries does not exist. Generating $gs_lens_dir$metric timeseries from start"
 			fi
 
 			if [[ $LENS != "" ]]; then
