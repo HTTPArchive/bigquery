@@ -106,7 +106,6 @@ else
 
 		for LENS in "${LENSES[@]}"
 		do
-			echo "Generating for lens: $LENS"
 
 			gs_url="gs://httparchive/reports/$gs_lens_dir$YYYY_MM_DD/${metric}.json"
 			gsutil ls $gs_url &> /dev/null
@@ -122,8 +121,10 @@ else
 					echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
 					exit 1
 				fi
-				echo -e "Generating reports for $LENS"
+				echo -e "Generating ${metric} report for $LENS"
 				gs_lens_dir="$LENS/"
+			else
+				echo -e "Generating ${metric} report for base (no lens)"
 			fi
 
 			# Replace the date template in the query.
@@ -207,7 +208,6 @@ else
 
 		for LENS in "${LENSES[@]}"
 		do
-			echo "Generating for lens: $LENS"
 
 			gs_lens_dir=""
 			if [[ $LENS != "" ]]; then
@@ -215,8 +215,10 @@ else
 					echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
 					exit 1
 				fi
-				echo -e "Generating reports for $LENS"
+				echo -e "Generating ${metric} report for $LENS"
 				gs_lens_dir="$LENS/"
+			else
+				echo -e "Generating ${metric} report for base (no lens)"
 			fi
 
 			date_join=""
