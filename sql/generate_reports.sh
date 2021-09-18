@@ -138,12 +138,12 @@ else
 
 		if [ ${VERBOSE} -eq 1 ]; then
 			echo "Running this query:"
-			printf "${sql}\n"
+			echo "${sql}\n"
 		fi
 
 		# Run the histogram query on BigQuery.
 		START_TIME=$SECONDS
-		result=$(printf "${sql}" | $BQ_CMD)
+		result=$(echo "${sql}" | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
@@ -299,17 +299,19 @@ else
 					# If WHERE clause doesn't exists then add it, before GROUP BY
 					sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query)
 				fi
+			else
+				sql=$(cat $query)
 			fi
 		fi
 
 		if [ ${VERBOSE} -eq 1 ]; then
 			echo "Running this query:"
-			printf "${sql}\n"
+			echo "${sql}\n"
 		fi
 
 		# Run the timeseries query on BigQuery.
 		START_TIME=$SECONDS
-		result=$(printf "${sql}" | $BQ_CMD)
+		result=$(echo "${sql}" | $BQ_CMD)
 
 		# Make sure the query succeeded.
 		if [ $? -eq 0 ]; then
