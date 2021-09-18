@@ -74,16 +74,6 @@ if [ $GENERATE_HISTOGRAM -ne 0 -a $? -ne 0 ]; then
 	exit 1
 fi
 
-gs_lens_dir=""
-if [[ $LENS != "" ]]; then
-	if [ ! -f "sql/lens/$LENS/histograms.sql" ] || [ ! -f "sql/lens/$LENS/timeseries.sql" ]; then
-		echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
-		exit 1
-	fi
-	echo -e "Generating reports for $LENS"
-	gs_lens_dir="$LENS/"
-fi
-
 if [ $GENERATE_HISTOGRAM -eq 0 ]; then
 	echo -e "Skipping histograms"
 else
@@ -111,54 +101,76 @@ else
 
 		echo -e "Generating $metric histogram"
 
-		# Replace the date template in the query.
-		if [[ $LENS != "" ]]; then
-			lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
-			if [[ $metric == crux* ]]; then
-				if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
-					echo "Using alternative crux lens join"
-					lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | sed -e "s/--noqa: disable=PRS//g" | tr '\n' ' ')"
-				else
-					echo "CrUX queries do not support histograms for this lens so skipping"
-					continue
-				fi
-
-				sql=$(sed -e "s/\(\`chrome-ux-report[^\`]*\`\)/\1 $lens_join/" $query \
-					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
-					| sed -e "s/\${YYYYMM}/$YYYYMM/g")
-			else
-				sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
-					| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
-					| sed -e "s/\${YYYYMM}/$YYYYMM/g")
-			fi
+		if [[ $LENS == "ALL" ]]; then
+			LENSES=("" $(ls sql/lens))
+			echo "Generating one lens"
 		else
-			sql=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
-				| sed -e "s/\${YYYYMM}/$YYYYMM/")
+			LENSES=($LENS)
 		fi
 
-		if [ ${VERBOSE} -eq 1 ]; then
-			echo "Running this query:"
-			echo "${sql}\n"
-		fi
+		for LENS in "${LENSES[@]}"
+		do
+			echo "Generating for lens: $LENS"
 
-		# Run the histogram query on BigQuery.
-		START_TIME=$SECONDS
-		result=$(echo "${sql}" | $BQ_CMD)
-
-		# Make sure the query succeeded.
-		if [ $? -eq 0 ]; then
-			ELAPSED_TIME=$(($SECONDS - $START_TIME))
+			gs_lens_dir=""
 			if [[ $LENS != "" ]]; then
-				echo "$metric for $LENS took $ELAPSED_TIME seconds"
-			else
-				echo "$metric took $ELAPSED_TIME seconds"
+				if [ ! -f "sql/lens/$LENS/histograms.sql" ] || [ ! -f "sql/lens/$LENS/timeseries.sql" ]; then
+					echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
+					exit 1
+				fi
+				echo -e "Generating reports for $LENS"
+				gs_lens_dir="$LENS/"
 			fi
-			# Upload the response to Google Storage.
-			echo $result \
-				| gsutil  -h "Content-Type:application/json" cp - $gs_url
-		else
-			echo $result >&2
-		fi
+
+			# Replace the date template in the query.
+			if [[ $LENS != "" ]]; then
+				lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
+				if [[ $metric == crux* ]]; then
+					if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
+						echo "Using alternative crux lens join"
+						lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | sed -e "s/--noqa: disable=PRS//g" | tr '\n' ' ')"
+					else
+						echo "CrUX queries do not support histograms for this lens so skipping"
+						continue
+					fi
+
+					sql=$(sed -e "s/\(\`chrome-ux-report[^\`]*\`\)/\1 $lens_join/" $query \
+						| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
+						| sed -e "s/\${YYYYMM}/$YYYYMM/g")
+				else
+					sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
+						| sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/g" \
+						| sed -e "s/\${YYYYMM}/$YYYYMM/g")
+				fi
+			else
+				sql=$(sed -e "s/\${YYYY_MM_DD}/$YYYY_MM_DD/" $query \
+					| sed -e "s/\${YYYYMM}/$YYYYMM/")
+			fi
+
+			if [ ${VERBOSE} -eq 1 ]; then
+				echo "Running this query:"
+				echo "${sql}\n"
+			fi
+
+			# Run the histogram query on BigQuery.
+			START_TIME=$SECONDS
+			result=$(echo "${sql}" | $BQ_CMD)
+
+			# Make sure the query succeeded.
+			if [ $? -eq 0 ]; then
+				ELAPSED_TIME=$(($SECONDS - $START_TIME))
+				if [[ $LENS != "" ]]; then
+					echo "$metric for $LENS took $ELAPSED_TIME seconds"
+				else
+					echo "$metric took $ELAPSED_TIME seconds"
+				fi
+				# Upload the response to Google Storage.
+				echo $result \
+					| gsutil  -h "Content-Type:application/json" cp - $gs_url
+			else
+				echo $result >&2
+			fi
+		done
 	done
 fi
 
@@ -247,92 +259,115 @@ else
 			echo -e "Timeseries does not exist. Generating $metric timeseries from start"
 		fi
 
-		if [[ $LENS != "" ]]; then
+		if [[ $LENS == "ALL" ]]; then
+			LENSES=("" $(ls sql/lens))
+			echo "Generating one lens"
+		else
+			LENSES=($LENS)
+		fi
 
-			if [[ $(grep "httparchive.blink_features.usage" $query) ]]; then
-				# blink_features.usage need to be replace by blink_features.features for lenses
-				if [[ -f sql/lens/$LENS/blink_timeseries.sql ]]; then
-					echo "Using alternative blink_timeseries lens join"
-					lens_join="$(cat sql/lens/$LENS/blink_timeseries.sql | tr '\n' ' ')"
+		for LENS in "${LENSES[@]}"
+		do
+			echo "Generating for lens: $LENS"
 
-					# For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
-					if [[ -z "${date_join}" ]]; then
-						sql=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-						| sed -e "s/ {{ BLINK_DATE_JOIN }}//g")
+			gs_lens_dir=""
+			if [[ $LENS != "" ]]; then
+				if [ ! -f "sql/lens/$LENS/histograms.sql" ] || [ ! -f "sql/lens/$LENS/timeseries.sql" ]; then
+					echo -e "Lens histogram/timeseries files not found in sql/lens/$LENS."
+					exit 1
+				fi
+				echo -e "Generating reports for $LENS"
+				gs_lens_dir="$LENS/"
+			fi
+
+
+			if [[ $LENS != "" ]]; then
+
+				if [[ $(grep "httparchive.blink_features.usage" $query) ]]; then
+					# blink_features.usage need to be replace by blink_features.features for lenses
+					if [[ -f sql/lens/$LENS/blink_timeseries.sql ]]; then
+						echo "Using alternative blink_timeseries lens join"
+						lens_join="$(cat sql/lens/$LENS/blink_timeseries.sql | tr '\n' ' ')"
+
+						# For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
+						if [[ -z "${date_join}" ]]; then
+							sql=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+							| sed -e "s/ {{ BLINK_DATE_JOIN }}//g")
+						else
+							sql=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
+								| sed -e "s/{{ BLINK_DATE_JOIN }}/AND $date_join/g")
+						fi
 					else
-						sql=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-							| sed -e "s/{{ BLINK_DATE_JOIN }}/AND $date_join/g")
+						echo "blink_features.usage queries not supported for this lens so skipping lens"
+						continue
 					fi
 				else
-					echo "blink_features.usage queries not supported for this lens so skipping lens"
-					continue
+
+					lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
+					if [[ $metric == crux* ]]; then
+						echo "CrUX query so using alternative lens join"
+						lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) ON (origin || '\/' = url AND REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\\\\\\\d{4})(\\\\\\\\d{2})', '\\\\\\\\1_\\\\\\\\2_01') || '_' || IF(device = 'phone', 'mobile', device) = _TABLE_SUFFIX)"
+					fi
+
+					if [[ -n "${date_join}" ]]; then
+						if [[ $(grep -i "WHERE" $query) ]]; then
+							# If WHERE clause already exists then add to it, before GROUP BY
+							sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
+								| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
+						else
+							# If WHERE clause doesn't exists then add it, before GROUP BY
+							sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
+								| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
+						fi
+					else
+						sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query)
+					fi
 				fi
+
 			else
-
-				lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
-				if [[ $metric == crux* ]]; then
-					echo "CrUX query so using alternative lens join"
-					lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) ON (origin || '\/' = url AND REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\\\\\\\d{4})(\\\\\\\\d{2})', '\\\\\\\\1_\\\\\\\\2_01') || '_' || IF(device = 'phone', 'mobile', device) = _TABLE_SUFFIX)"
-				fi
-
 				if [[ -n "${date_join}" ]]; then
 					if [[ $(grep -i "WHERE" $query) ]]; then
 						# If WHERE clause already exists then add to it, before GROUP BY
-						sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
-							| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
+						sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
 					else
 						# If WHERE clause doesn't exists then add it, before GROUP BY
-						sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
-							| sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
+						sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query)
 					fi
 				else
-					sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query)
+					sql=$(cat $query)
 				fi
 			fi
 
-		else
-			if [[ -n "${date_join}" ]]; then
-				if [[ $(grep -i "WHERE" $query) ]]; then
-					# If WHERE clause already exists then add to it, before GROUP BY
-					sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
+			if [ ${VERBOSE} -eq 1 ]; then
+				echo "Running this query:"
+				echo "${sql}\n"
+			fi
+
+			# Run the timeseries query on BigQuery.
+			START_TIME=$SECONDS
+			result=$(echo "${sql}" | $BQ_CMD)
+
+			# Make sure the query succeeded.
+			if [ $? -eq 0 ]; then
+				ELAPSED_TIME=$(($SECONDS - $START_TIME))
+				if [[ $LENS != "" ]]; then
+					echo "$metric for $LENS took $ELAPSED_TIME seconds"
 				else
-					# If WHERE clause doesn't exists then add it, before GROUP BY
-					sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query)
+					echo "$metric took $ELAPSED_TIME seconds"
 				fi
+
+				# If it's a partial run, then combine with the current results.
+				if [[ $FORCE -eq 0 && -n "${current_contents}" ]]; then
+					result=$(echo ${result} ${current_contents} | jq '.+= input')
+				fi
+
+				# Upload the response to Google Storage.
+				echo $result \
+					| gsutil  -h "Content-Type:application/json" cp - $gs_url
 			else
-				sql=$(cat $query)
+				echo $result >&2
 			fi
-		fi
-
-		if [ ${VERBOSE} -eq 1 ]; then
-			echo "Running this query:"
-			echo "${sql}\n"
-		fi
-
-		# Run the timeseries query on BigQuery.
-		START_TIME=$SECONDS
-		result=$(echo "${sql}" | $BQ_CMD)
-
-		# Make sure the query succeeded.
-		if [ $? -eq 0 ]; then
-			ELAPSED_TIME=$(($SECONDS - $START_TIME))
-			if [[ $LENS != "" ]]; then
-				echo "$metric for $LENS took $ELAPSED_TIME seconds"
-			else
-				echo "$metric took $ELAPSED_TIME seconds"
-			fi
-
-			# If it's a partial run, then combine with the current results.
-			if [[ $FORCE -eq 0 && -n "${current_contents}" ]]; then
-				result=$(echo ${result} ${current_contents} | jq '.+= input')
-			fi
-
-			# Upload the response to Google Storage.
-			echo $result \
-				| gsutil  -h "Content-Type:application/json" cp - $gs_url
-		else
-			echo $result >&2
-		fi
+		done
 	done
 fi
 

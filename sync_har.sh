@@ -87,8 +87,7 @@ cd $HOME/code
 
 gsutil -q stat gs://httparchive/reports/$table/*
 if [ $? -eq 1 ]; then
-  . sql/generate_reports.sh -th $table
-  ls -1 sql/lens | xargs -I lens sql/generate_reports.sh -th $table -l lens
+  . sql/generate_reports.sh -th $table -l ALL
 else
   echo -e "Reports for ${table} already exist, skipping."
 fi
