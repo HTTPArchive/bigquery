@@ -48,7 +48,7 @@ Sometimes it's necessary to manually run this process, for example if a new metr
 #       (e.g. "*crux*")
 ```
 
-You can omit one of the `-t` or -h` flags to focus only on histogram or timeseries generation. The `-f` flag ensures that histogram data gets overwritten. Omit this flag to skip queries for dates that already exist (much faster for batch jobs, see below).
+You can omit one of the `-t` or `-h` flags to focus only on histogram or timeseries generation. The `-f` flag ensures that histogram data gets overwritten. Omit this flag to skip queries for dates that already exist (much faster for batch jobs, see below).
 
 ### Getting Dates Dynamically
 
