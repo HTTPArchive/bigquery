@@ -91,26 +91,30 @@ else
 		# For example, `sql/histograms/foo.sql` will produce `foo`.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
 
-		gs_url="gs://httparchive/reports/$gs_lens_dir$YYYY_MM_DD/${metric}.json"
-		gsutil ls $gs_url &> /dev/null
-		if [ $? -eq 0 ] && [ $FORCE -eq 0 ]; then
-			# The file already exists, so skip the query.
-			echo -e "Skipping $metric histogram as already exists"
-			continue
-		fi
-
 		echo -e "Generating $metric histogram"
 
-		if [[ $LENS == "ALL" ]]; then
+		if [[ $LENS == "" ]]; then
+			LENSES=("")
+			echo "Generating without lens"
+		elif [[ $LENS == "ALL" ]]; then
 			LENSES=("" $(ls sql/lens))
-			echo "Generating one lens"
+			echo "Generating without lens and all lenses"
 		else
 			LENSES=($LENS)
+			echo "Generating one lens"
 		fi
 
 		for LENS in "${LENSES[@]}"
 		do
 			echo "Generating for lens: $LENS"
+
+			gs_url="gs://httparchive/reports/$gs_lens_dir$YYYY_MM_DD/${metric}.json"
+			gsutil ls $gs_url &> /dev/null
+			if [ $? -eq 0 ] && [ $FORCE -eq 0 ]; then
+				# The file already exists, so skip the query.
+				echo -e "Skipping $metric histogram as already exists"
+				continue
+			fi
 
 			gs_lens_dir=""
 			if [[ $LENS != "" ]]; then
@@ -190,80 +194,15 @@ else
 		# Extract the metric name from the file path.
 		metric=$(echo $(basename $query) | cut -d"." -f1)
 
-		date_join=""
-		max_date=""
-		current_contents=""
-		gs_url="gs://httparchive/reports/$gs_lens_dir${metric}.json"
-		gsutil ls $gs_url &> /dev/null
-		if [ $? -eq 0 ]; then
-			# The file already exists, so check max date
-			current_contents=$(gsutil cat $gs_url)
-			max_date=$(echo $current_contents | jq -r '[ .[] | .date ] | max')
-			if [[ $FORCE -eq 0 && -n "${max_date}" ]]; then
-
-				# Only run if new dates
-				if [[ -z "${YYYY_MM_DD}" || "${max_date}" < "${YYYY_MM_DD}" ]]; then
-					if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
-						date_join="yyyymmdd > REPLACE(\"$max_date\",\"_\",\"\")"
-						if [[ -n "$YYYY_MM_DD" ]]; then
-							# If a date is given, then only run up until then (in case next month is mid-run as don't wanna get just desktop data)
-							date_join="${date_join} AND yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
-						fi
-					elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
-						date_join="yyyymmdd > CAST(REPLACE(\"$max_date\",\"_\",\"-\") AS DATE)"
-						if [[ -n "$YYYY_MM_DD" ]]; then
-							# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
-							date_join="${date_join} AND yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
-						fi
-					elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
-						date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) > \"$max_date\""
-						if [[ -n "$YYYY_MM_DD" ]]; then
-							# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
-							date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
-						fi
-					fi
-
-					echo -e "Generating $metric timeseries in incremental mode from ${max_date} to ${YYYY_MM_DD}"
-
-				else
-					echo -e "Skipping $metric timeseries as ${YYYY_MM_DD} already exists in the data. Run in force mode (-f) if you want to rerun."
-					continue
-				fi
-
-			elif [[ -n "$YYYY_MM_DD" ]]; then
-				# Even if doing a force run we only wanna run up until date given in case next month is mid-run as don't wanna get just desktop data
-				if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
-					date_join="yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
-				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
-					date_join="yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
-				elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
-					# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
-					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
-				fi
-
-				echo -e "Force Mode=${FORCE}. Generating $metric timeseries from start until ${YYYY_MM_DD}."
-			fi
-		elif [[ -n "$YYYY_MM_DD" ]]; then
-			# Even if the file doesn't exist we only wanna run up until date given in case next month is mid-run as don't wanna get just desktop data
-			if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
-				date_join="yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
-			elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
-				date_join="yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
-			elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
-				date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
-			fi
-
-			echo -e "Timeseries does not exist. Generating $metric timeseries from start until ${YYYY_MM_DD}"
-
-		else
-			echo -e "Timeseries does not exist. Generating $metric timeseries from start"
-		fi
-
-		if [[ $LENS == "ALL" ]]; then
+		if [[ $LENS == "" ]]; then
+			LENSES=("")
+			echo "Generating without lens"
+		elif [[ $LENS == "ALL" ]]; then
 			LENSES=("" $(ls sql/lens))
-			echo "Generating one lens"
+			echo "Generating without lens and all lenses"
 		else
 			LENSES=($LENS)
+			echo "Generating one lens"
 		fi
 
 		for LENS in "${LENSES[@]}"
@@ -280,6 +219,74 @@ else
 				gs_lens_dir="$LENS/"
 			fi
 
+			date_join=""
+			max_date=""
+			current_contents=""
+			gs_url="gs://httparchive/reports/$gs_lens_dir${metric}.json"
+			gsutil ls $gs_url &> /dev/null
+			if [ $? -eq 0 ]; then
+				# The file already exists, so check max date
+				current_contents=$(gsutil cat $gs_url)
+				max_date=$(echo $current_contents | jq -r '[ .[] | .date ] | max')
+				if [[ $FORCE -eq 0 && -n "${max_date}" ]]; then
+
+					# Only run if new dates
+					if [[ -z "${YYYY_MM_DD}" || "${max_date}" < "${YYYY_MM_DD}" ]]; then
+						if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
+							date_join="yyyymmdd > REPLACE(\"$max_date\",\"_\",\"\")"
+							if [[ -n "$YYYY_MM_DD" ]]; then
+								# If a date is given, then only run up until then (in case next month is mid-run as don't wanna get just desktop data)
+								date_join="${date_join} AND yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
+							fi
+						elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
+							date_join="yyyymmdd > CAST(REPLACE(\"$max_date\",\"_\",\"-\") AS DATE)"
+							if [[ -n "$YYYY_MM_DD" ]]; then
+								# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
+								date_join="${date_join} AND yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
+							fi
+						elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
+							date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) > \"$max_date\""
+							if [[ -n "$YYYY_MM_DD" ]]; then
+								# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
+								date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
+							fi
+						fi
+
+						echo -e "Generating $metric timeseries in incremental mode from ${max_date} to ${YYYY_MM_DD}"
+
+					else
+						echo -e "Skipping $metric timeseries as ${YYYY_MM_DD} already exists in the data. Run in force mode (-f) if you want to rerun."
+						continue
+					fi
+
+				elif [[ -n "$YYYY_MM_DD" ]]; then
+					# Even if doing a force run we only wanna run up until date given in case next month is mid-run as don't wanna get just desktop data
+					if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
+						date_join="yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
+					elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
+						date_join="yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
+					elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
+						# If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
+						date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
+					fi
+
+					echo -e "Force Mode=${FORCE}. Generating $metric timeseries from start until ${YYYY_MM_DD}."
+				fi
+			elif [[ -n "$YYYY_MM_DD" ]]; then
+				# Even if the file doesn't exist we only wanna run up until date given in case next month is mid-run as don't wanna get just desktop data
+				if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
+					date_join="yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
+				elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
+					date_join="yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
+				elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
+					date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
+				fi
+
+				echo -e "Timeseries does not exist. Generating $metric timeseries from start until ${YYYY_MM_DD}"
+
+			else
+				echo -e "Timeseries does not exist. Generating $metric timeseries from start"
+			fi
 
 			if [[ $LENS != "" ]]; then
 
