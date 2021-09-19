@@ -12,7 +12,7 @@ FROM
 JOIN
   (
     SELECT
-      _TABLE_SUFFIX as _TABLE_SUFFIX,
+      _TABLE_SUFFIX AS _TABLE_SUFFIX,
       url AS tech_url
     FROM
       `httparchive.technologies.*`
@@ -30,18 +30,18 @@ JOIN (
     COUNT(DISTINCT url) AS total
   FROM `httparchive.blink_features.features`
   JOIN
-  (
-    SELECT
-      _TABLE_SUFFIX as _TABLE_SUFFIX,
-      url AS tech_url
-    FROM
-      `httparchive.technologies.*`
-    WHERE
-      app = 'Drupal'
-    GROUP BY
-      1,
-      2
-  )
+    (
+      SELECT
+        _TABLE_SUFFIX AS _TABLE_SUFFIX,
+        url AS tech_url
+      FROM
+        `httparchive.technologies.*`
+      WHERE
+        app = 'Drupal'
+      GROUP BY
+        1,
+        2
+    )
   ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || "_" || client)
   WHERE 1 = 1
 {{ BLINK_DATE_JOIN }}
