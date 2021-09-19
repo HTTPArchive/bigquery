@@ -12,20 +12,17 @@ FROM
 JOIN
   (
     SELECT
-      PARSE_DATE('%Y_%m_%d', SUBSTR(_TABLE_SUFFIX, 0, 10)) AS yyyymmdd,
-      SUBSTR(_TABLE_SUFFIX, 12) AS client,
-      url
+      _TABLE_SUFFIX as _TABLE_SUFFIX,
+      url AS tech_url
     FROM
       `httparchive.technologies.*`
     WHERE
-      app = 'WordPress' AND
-      LENGTH(url) > 0
+      app = 'WordPress'
     GROUP BY
       1,
-      2,
-      3
+      2
   )
-USING (yyyymmdd, url, client)
+ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || "_" || client)
 JOIN (
   SELECT
     yyyymmdd,
@@ -33,22 +30,19 @@ JOIN (
     COUNT(DISTINCT url) AS total
   FROM `httparchive.blink_features.features`
   JOIN
-    (
-      SELECT
-        PARSE_DATE('%Y_%m_%d', SUBSTR(_TABLE_SUFFIX, 0, 10)) AS yyyymmdd,
-        SUBSTR(_TABLE_SUFFIX, 12) AS client,
-        url
-      FROM
-        `httparchive.technologies.*`
-      WHERE
-        app = 'WordPress' AND
-        LENGTH(url) > 0
-      GROUP BY
-        1,
-        2,
-        3
-    )
-  USING (yyyymmdd, url, client)
+  (
+    SELECT
+      _TABLE_SUFFIX as _TABLE_SUFFIX,
+      url AS tech_url
+    FROM
+      `httparchive.technologies.*`
+    WHERE
+      app = 'WordPress'
+    GROUP BY
+      1,
+      2
+  )
+  ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || "_" || client)
   WHERE 1 = 1
 {{ BLINK_DATE_JOIN }}
   GROUP BY
