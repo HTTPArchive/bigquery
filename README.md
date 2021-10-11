@@ -1,4 +1,4 @@
-## HTTP Archive + BigQuery data import
+# HTTP Archive + BigQuery data import
 
 _Note: you don't need to import this data yourself, the BigQuery dataset is public! [Getting started](https://github.com/HTTPArchive/httparchive.org/blob/master/docs/gettingstarted_bigquery.md)._
 
