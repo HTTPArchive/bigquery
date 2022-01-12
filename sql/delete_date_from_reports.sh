@@ -23,7 +23,7 @@ VERBOSE=0
 NO_CHANGES=0
 
 # Read the flags.
-while getopts ":vd:l:r:" opt; do
+while getopts ":nvd:l:r:" opt; do
 	case "${opt}" in
 		d)
 			YYYY_MM_DD=${OPTARG}
@@ -31,11 +31,11 @@ while getopts ":vd:l:r:" opt; do
 		v)
 			VERBOSE=1
 			;;
-		l)
-			LENS_ARG=${OPTARG}
-			;;
 		n)
 			NO_CHANGES=1
+			;;
+		l)
+			LENS_ARG=${OPTARG}
 			;;
 		r)
 			REPORTS=${OPTARG}
@@ -96,7 +96,7 @@ for query in sql/timeseries/$REPORTS.sql; do
 				echo "${current_contents}\n"
 			fi
 
-			new_contents=$(echo "$current_contents" | jq -c --indent 1 '.[] | select(.date!=env.YYYY_MM_DD)' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
+			new_contents=$(echo "$current_contents" | jq -c --indent 1 --arg date "${YYYY_MM_DD}" '.[] | select(.date!=$data)' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
 
 			if [ ${VERBOSE} -eq 1 ]; then
 				echo "New JSON:"
