@@ -20,6 +20,7 @@ set -o pipefail
 LENS_ARG=""
 REPORTS="*"
 VERBOSE=0
+NO_CHANGES=0
 
 # Read the flags.
 while getopts ":vd:l:r:" opt; do
@@ -32,6 +33,9 @@ while getopts ":vd:l:r:" opt; do
 			;;
 		l)
 			LENS_ARG=${OPTARG}
+			;;
+		n)
+			NO_CHANGES=1
 			;;
 		r)
 			REPORTS=${OPTARG}
@@ -100,7 +104,7 @@ for query in sql/timeseries/$REPORTS.sql; do
 			fi
 
 			# Make sure the removal succeeded.
-			if [ $? -eq 0 ]; then
+			if [ $? -eq 0 ] && [ ${NO_CHANGES} -eq 0 ]; then
 
 				# Upload the response to Google Storage.
 				echo "Uploading new file to Google Storage"
