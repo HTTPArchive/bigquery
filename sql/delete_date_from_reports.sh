@@ -17,15 +17,18 @@
 
 set -o pipefail
 
-FORCE=0
 LENS_ARG=""
 REPORTS="*"
+VERBOSE=0
 
 # Read the flags.
-while getopts ":d:l:r:" opt; do
+while getopts ":vd:l:r:" opt; do
 	case "${opt}" in
 		d)
 			YYYY_MM_DD=${OPTARG}
+			;;
+		v)
+			VERBOSE=1
 			;;
 		l)
 			LENS_ARG=${OPTARG}
@@ -83,12 +86,24 @@ for query in sql/timeseries/$REPORTS.sql; do
 
 			# The file exists, so remove the requested date
 			current_contents=$(gsutil cat $gs_url)
+
+			if [ ${VERBOSE} -eq 1 ]; then
+				echo "Current JSON:"
+				echo "${current_contents}\n"
+			fi
+
 			new_contents=$(echo "$current_contents" | jq -c --indent 1 '.[] | select(.date!="$YYY_MM_DD")' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
+
+			if [ ${VERBOSE} -eq 1 ]; then
+				echo "New JSON:"
+				echo "${new_contents}\n"
+			fi
 
 			# Make sure the removal succeeded.
 			if [ $? -eq 0 ]; then
 
 				# Upload the response to Google Storage.
+				echo "Uploading new file to Google Storage"
 				echo $new_contents \
 					| gsutil  -h "Content-Type:application/json" cp - $gs_url
 			else
