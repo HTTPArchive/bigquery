@@ -82,7 +82,7 @@ for query in sql/timeseries/$REPORTS.sql; do
 
 		if [ $? -eq 0 ]; then
 
-			echo "Updating this query: ${sql}\n"
+			echo "Updating this query: ${query}\n"
 
 			# The file exists, so remove the requested date
 			current_contents=$(gsutil cat $gs_url)
@@ -92,7 +92,7 @@ for query in sql/timeseries/$REPORTS.sql; do
 				echo "${current_contents}\n"
 			fi
 
-			new_contents=$(echo "$current_contents" | jq -c --indent 1 '.[] | select(.date!="$YYY_MM_DD")' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
+			new_contents=$(echo "$current_contents" | jq -c --indent 1 '.[] | select(.date!="$YYYY_MM_DD")' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
 
 			if [ ${VERBOSE} -eq 1 ]; then
 				echo "New JSON:"
