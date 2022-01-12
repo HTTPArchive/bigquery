@@ -92,7 +92,7 @@ for query in sql/timeseries/$REPORTS.sql; do
 				echo "${current_contents}\n"
 			fi
 
-			new_contents=$(echo "$current_contents" | jq -c --indent 1 '.[] | select(.date!="$YYYY_MM_DD")' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
+			new_contents=$(echo "$current_contents" | jq -c --indent 1 '.[] | select(.date!=env.YYYY_MM_DD)' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
 
 			if [ ${VERBOSE} -eq 1 ]; then
 				echo "New JSON:"
