@@ -82,7 +82,7 @@ for query in sql/timeseries/$REPORTS.sql; do
 
 		if [ $? -eq 0 ]; then
 
-			echo "Updating this query: ${query}\n"
+			echo "Updating this query: ${metric} for LENS: ${LENS}\n"
 
 			# The file exists, so remove the requested date
 			current_contents=$(gsutil cat $gs_url)
