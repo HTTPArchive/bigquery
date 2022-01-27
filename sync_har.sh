@@ -82,7 +82,7 @@ python bigquery_import.py \
 
 deactivate
 
-echo -e "Attempting to generate reports..."
+echo -e "Attempting to generate reports for $table..."
 cd $HOME/code
 
 gsutil -q stat gs://httparchive/reports/$table/*

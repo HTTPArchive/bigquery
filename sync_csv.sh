@@ -130,7 +130,7 @@ else
   exit 1
 fi
 
-echo -e "Attempting to generate reports..."
+echo -e "Attempting to generate reports for $table..."
 cd $HOME/code
 
 gsutil -q stat gs://httparchive/reports/$table/*
