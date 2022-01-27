@@ -19,8 +19,8 @@ JOIN
     WHERE
       app = 'WordPress'
     GROUP BY
-      1,
-      2
+      _TABLE_SUFFIX,
+      tech_url
   )
 ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || "_" || client)
 JOIN (
@@ -39,8 +39,8 @@ JOIN (
       WHERE
         app = 'WordPress'
       GROUP BY
-        1,
-        2
+        _TABLE_SUFFIX,
+        tech_url
     )
   ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || "_" || client)
   WHERE 1 = 1
