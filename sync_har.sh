@@ -82,12 +82,12 @@ python bigquery_import.py \
 
 deactivate
 
-echo -e "Attempting to generate reports for $YYYY_MM_DD..."
+echo -e "Attempting to generate reports for ${YYYY_MM_DD}..."
 cd $HOME/code
 
-gsutil -q stat gs://httparchive/reports/$YYYY_MM_DD/*
+gsutil -q stat gs://httparchive/reports/${YYYY_MM_DD}/*
 if [ $? -eq 1 ]; then
-  . sql/generate_reports.sh -th $YYYY_MM_DD -l ALL
+  . sql/generate_reports.sh -th ${YYYY_MM_DD} -l ALL
 else
   echo -e "Reports for ${YYYY_MM_DD} already exist, skipping."
 fi
