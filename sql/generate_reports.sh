@@ -71,6 +71,14 @@ fi
 	bq show "httparchive:summary_pages.${YYYY_MM_DD}_mobile") &> /dev/null
 if [ $GENERATE_HISTOGRAM -ne 0 -a $? -ne 0 ]; then
 	echo -e "The BigQuery tables for $YYYY_MM_DD are not available." >&2
+
+	# List table data for debugging
+	echo $(date)
+	bq show "httparchive:pages.${YYYY_MM_DD}_desktop" | head -5
+	bq show "httparchive:pages.${YYYY_MM_DD}_mobile" | head -5
+	bq show "httparchive:summary_pages.${YYYY_MM_DD}_desktop" | head -5
+	bq show "httparchive:summary_pages.${YYYY_MM_DD}_mobile" | head -5
+	exit 1
 fi
 
 if [ $GENERATE_HISTOGRAM -eq 0 ]; then
