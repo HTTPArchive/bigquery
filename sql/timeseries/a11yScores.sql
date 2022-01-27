@@ -1,6 +1,6 @@
 #standardSQL
 # Lighthouse changed format of scores in v3.0.0 released in July 2018 so handle old with a UDF
-CREATE TEMPORARY FUNCTION getA11yScore(reportCategories STRING) -- noqa: PRS
+CREATE TEMPORARY FUNCTION getA11yScore(reportCategories STRING)
 RETURNS FLOAT64 DETERMINISTIC
 LANGUAGE js AS """
   $=JSON.parse(reportCategories);

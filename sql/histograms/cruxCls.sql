@@ -1,5 +1,5 @@
 #standardSQL
-CREATE TEMPORARY FUNCTION spreadBins(bins ARRAY<STRUCT<start NUMERIC, `end` NUMERIC, density FLOAT64>>) -- noqa: PRS
+CREATE TEMPORARY FUNCTION spreadBins(bins ARRAY<STRUCT<start NUMERIC, `end` NUMERIC, density FLOAT64>>)
 RETURNS ARRAY<STRUCT<client STRING, start NUMERIC, density FLOAT64>>
 LANGUAGE js AS """
   // Convert into 0.01 bins and spread the density around.
