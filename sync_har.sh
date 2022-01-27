@@ -27,7 +27,7 @@ fi
 
 # All crawls begin on the first of the month.
 import_date=$(date +"${month}_1_${year}")
-table="${year}_${MM}_01"
+YYYY_MM_DD="${year}_${MM}_01"
 
 if [ -n "$1" ]; then
   archive=$1
@@ -46,7 +46,7 @@ else
   exit
 fi
 
-if bq show "httparchive:pages.${table}_${client}"; then
+if bq show "httparchive:pages.${YYYY_MM_DD}_${client}"; then
   echo "Table already exists in BigQuery, exiting"
   exit 1
 else
@@ -82,14 +82,14 @@ python bigquery_import.py \
 
 deactivate
 
-echo -e "Attempting to generate reports for $table..."
+echo -e "Attempting to generate reports for $YYYY_MM_DD..."
 cd $HOME/code
 
-gsutil -q stat gs://httparchive/reports/$table/*
+gsutil -q stat gs://httparchive/reports/$YYYY_MM_DD/*
 if [ $? -eq 1 ]; then
-  . sql/generate_reports.sh -th $table -l ALL
+  . sql/generate_reports.sh -th $YYYY_MM_DD -l ALL
 else
-  echo -e "Reports for ${table} already exist, skipping."
+  echo -e "Reports for ${YYYY_MM_DD} already exist, skipping."
 fi
 
 echo "Done"

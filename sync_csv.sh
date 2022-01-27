@@ -32,21 +32,21 @@ mkdir -p $DATA/processed/$archive
 
 cd $DATA
 
-table=$(date --date="$(echo $adate | sed "s/_/ /g" -)" "+%Y_%m_%d")
+YYYY_MM_DD=$(date --date="$(echo $adate | sed "s/_/ /g" -)" "+%Y_%m_%d")
 
 if [[ $mobile == 1 ]]; then
-  table="${table}_mobile"
+  client="mobile"
 else
-  table="${table}_desktop"
+  client="desktop"
 fi
 
-ptable="summary_pages.${table}"
-rtable="summary_requests.${table}"
+ptable="summary_pages.${YYYY_MM_DD}_${client}"
+rtable="summary_requests.${YYYY_MM_DD}_${client}"
 
 if bq show httparchive:${ptable} &> /dev/null && \
    bq show httparchive:${rtable} &> /dev/null; then
   # Tables should be deleted from BigQuery first if the intent is to overwrite them.
-  echo -e "BigQuery summary tables for $table already exist, exiting"
+  echo -e "BigQuery summary tables for ${YYYY_MM_DD}_${client} already exist, exiting"
   exit 0
 fi
 
@@ -130,14 +130,14 @@ else
   exit 1
 fi
 
-echo -e "Attempting to generate reports for $table..."
+echo -e "Attempting to generate reports for $YYYY_MM_DD..."
 cd $HOME/code
 
-gsutil -q stat gs://httparchive/reports/$table/*
+gsutil -q stat gs://httparchive/reports/$YYYY_MM_DD/*
 if [ $? -eq 1 ]; then
-  . sql/generate_reports.sh -th $table -l ALL
+  . sql/generate_reports.sh -th $YYYY_MM_DD -l ALL
 else
-  echo -e "Reports for ${table} already exist, skipping."
+  echo -e "Reports for ${YYYY_MM_DD} already exist, skipping."
 fi
 
 echo "Done"
