@@ -6,4 +6,4 @@
 rules:
   document-start: disable
   line-length:
-    max: 100
+    max: 120
