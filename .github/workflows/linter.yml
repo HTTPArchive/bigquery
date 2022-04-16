@@ -33,7 +33,7 @@ jobs:
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}s
           FILTER_REGEX_EXCLUDE: .*/dataflow/
-          VALIDATE_BASH: true
+          # VALIDATE_BASH: true
           VALIDATE_EDITORCONFIG: true
           VALIDATE_JAVASCRIPT_ES: true
           VALIDATE_JSON: true
