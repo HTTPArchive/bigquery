@@ -12,10 +12,10 @@ FROM (
   SELECT
     _TABLE_SUFFIX AS _TABLE_SUFFIX,
     CAST(IFNULL(
-      JSON_EXTRACT(report, "$.audits.interactive.numericValue"),
+      JSON_EXTRACT(report, '$.audits.interactive.numericValue'),
       IFNULL(
-        JSON_EXTRACT(report, "$.audits.interactive.rawValue"),
-        JSON_EXTRACT(report, "$.audits.consistently-interactive.rawValue")
+        JSON_EXTRACT(report, '$.audits.interactive.rawValue'),
+        JSON_EXTRACT(report, '$.audits.consistently-interactive.rawValue')
       )
       ) AS FLOAT64) / 1000 AS value
   FROM
