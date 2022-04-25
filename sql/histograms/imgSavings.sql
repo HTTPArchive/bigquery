@@ -10,7 +10,7 @@ FROM (
     SELECT
       _TABLE_SUFFIX AS client,
       COUNT(0) AS volume,
-      CAST(FLOOR(CAST(JSON_EXTRACT(payload, "$._image_savings") AS FLOAT64) / (1024 * 10)) * 10 AS INT64) AS bin
+      CAST(FLOOR(CAST(JSON_EXTRACT(payload, '$._image_savings') AS FLOAT64) / (1024 * 10)) * 10 AS INT64) AS bin
     FROM
       `httparchive.pages.${YYYY_MM_DD}_*`
     GROUP BY

@@ -22,7 +22,7 @@ JOIN
       _TABLE_SUFFIX,
       tech_url
   )
-ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || "_" || client)
+ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || '_' || client)
 JOIN (
   SELECT
     yyyymmdd,
@@ -42,7 +42,7 @@ JOIN (
         _TABLE_SUFFIX,
         tech_url
     )
-  ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || "_" || client)
+  ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || '_' || client)
   WHERE 1 = 1
 {{ BLINK_DATE_JOIN }}
   GROUP BY
