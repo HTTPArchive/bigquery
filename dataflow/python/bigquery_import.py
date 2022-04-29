@@ -305,7 +305,7 @@ def from_json(str):
 def get_gcs_dir(release):
   """Formats a release string into a gs:// directory."""
 
-  return 'gs://httparchive/%s/' % release
+  return 'gs://httparchive/crawls/%s/' % release
 
 
 def gcs_list(gcs_dir):
