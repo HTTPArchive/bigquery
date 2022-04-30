@@ -160,7 +160,9 @@ def get_response_bodies(har):
 
   for request in requests:
     request_url = request.get('_full_url')
-    body = request.get('response').get('content').get('text', None)
+    body = None
+    if request.get('response') and request.get('response').get('content'):
+        body = request.get('response').get('content').get('text', None)
 
     if body == None:
       continue
