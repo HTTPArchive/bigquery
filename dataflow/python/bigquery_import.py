@@ -77,13 +77,14 @@ def get_requests(har):
   requests = []
 
   for request in entries:
+
+    request_url = request.get('_full_url')
+
     try:
       payload = to_json(trim_request(request))
     except:
       logging.warning('Skipping requests payload for "%s": unable to stringify as JSON.' % request_url)
       continue
-
-    request_url = request.get('_full_url')
 
     payload_size = len(payload)
     if payload_size > MAX_CONTENT_SIZE:
