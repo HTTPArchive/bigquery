@@ -53,7 +53,7 @@ else
   echo "Table does not exist in BigQuery, checking gs://..."
 fi
 
-if ! gsutil stat "gs://httparchive/${bucket}/done"; then
+if ! gsutil stat "gs://httparchive/crawls/${bucket}/done"; then
   echo "Bucket does not exist or has not finished importing"
   exit 1
 else

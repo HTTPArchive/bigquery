@@ -77,13 +77,14 @@ def get_requests(har):
   requests = []
 
   for request in entries:
+
+    request_url = request.get('_full_url')
+
     try:
       payload = to_json(trim_request(request))
     except:
       logging.warning('Skipping requests payload for "%s": unable to stringify as JSON.' % request_url)
       continue
-
-    request_url = request.get('_full_url')
 
     payload_size = len(payload)
     if payload_size > MAX_CONTENT_SIZE:
@@ -160,7 +161,9 @@ def get_response_bodies(har):
 
   for request in requests:
     request_url = request.get('_full_url')
-    body = request.get('response').get('content').get('text', None)
+    body = None
+    if request.get('response') and request.get('response').get('content'):
+        body = request.get('response').get('content').get('text', None)
 
     if body == None:
       continue
@@ -305,7 +308,7 @@ def from_json(str):
 def get_gcs_dir(release):
   """Formats a release string into a gs:// directory."""
 
-  return 'gs://httparchive/%s/' % release
+  return 'gs://httparchive/crawls/%s/' % release
 
 
 def gcs_list(gcs_dir):
