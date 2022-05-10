@@ -393,15 +393,13 @@ def run(argv=None):
         write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
-    # Skip Lighthouse for desktop HARs.
-    if known_args.input.startswith('android'):
-      (hars
-        | 'MapLighthouseReports' >> beam.FlatMap(get_lighthouse_reports)
-        | 'WriteLighthouseReports' >> beam.io.WriteToBigQuery(
-          get_bigquery_uri(known_args.input, 'lighthouse'),
-          schema='url:STRING, report:STRING',
-          write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+    (hars
+      | 'MapLighthouseReports' >> beam.FlatMap(get_lighthouse_reports)
+      | 'WriteLighthouseReports' >> beam.io.WriteToBigQuery(
+        get_bigquery_uri(known_args.input, 'lighthouse'),
+        schema='url:STRING, report:STRING',
+        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
 
 if __name__ == '__main__':
