@@ -29,6 +29,12 @@ def get_page(har):
   page = har.get('log').get('pages')[0]
   url = page.get('_URL')
 
+  metadata = page.get('_metadata')
+  if metadata:
+    # The page URL from metadata is more accurate.
+    # See https://github.com/HTTPArchive/data-pipeline/issues/48
+    url = metadata.get('tested_url')
+
   try:
     payload_json = to_json(page)
   except:
