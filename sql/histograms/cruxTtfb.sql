@@ -14,7 +14,7 @@ FROM (
     FROM (
       SELECT
         form_factor,
-        experimental.interaction_to_next_paint.histogram.bin AS bins
+        experimental.time_to_first_byte.histogram.bin AS bins
       FROM
         `chrome-ux-report.all.${YYYYMM}`)
     CROSS JOIN
