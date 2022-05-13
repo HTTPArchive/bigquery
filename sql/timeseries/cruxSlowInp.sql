@@ -21,7 +21,7 @@ FROM
   `chrome-ux-report.materialized.device_summary`
 WHERE
   device IN ('desktop', 'phone') AND
-  yyyymm >= 202204
+  yyyymm >= 202202
 GROUP BY
   date,
   timestamp,
