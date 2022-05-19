@@ -121,7 +121,7 @@ def hash_url(url):
 
 
 def get_response_bodies_a(har):
-  """Parse response bodies if the URL hashes to an odd number."""
+  """Parse response bodies (Part 1 of 4)."""
 
   if not har:
     return
@@ -132,7 +132,7 @@ def get_response_bodies_a(har):
     logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
     return
 
-  if hash_url(page_url) % 2 == 0:
+  if hash_url(page_url) % 4 == 1:
     return
 
   return get_response_bodies(har)
@@ -140,7 +140,7 @@ def get_response_bodies_a(har):
 
 
 def get_response_bodies_b(har):
-  """Parse response bodies if the URL hashes to an even number."""
+  """Parse response bodies (Part 2 of 4)."""
 
   if not har:
     return
@@ -151,7 +151,45 @@ def get_response_bodies_b(har):
     logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
     return
 
-  if hash_url(page_url) % 2 == 1:
+  if hash_url(page_url) % 4 == 2:
+    return
+
+  return get_response_bodies(har)
+
+
+
+def get_response_bodies_c(har):
+  """Parse response bodies (Part 3 of 4)."""
+
+  if not har:
+    return
+
+  page_url = get_page_url(har)
+
+  if not page_url:
+    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
+    return
+
+  if hash_url(page_url) % 4 == 3:
+    return
+
+  return get_response_bodies(har)
+
+
+
+def get_response_bodies_d(har):
+  """Parse response bodies (Part 4 of 4)."""
+
+  if not har:
+    return
+
+  page_url = get_page_url(har)
+
+  if not page_url:
+    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
+    return
+
+  if hash_url(page_url) % 4 == 0:
     return
 
   return get_response_bodies(har)
@@ -386,6 +424,22 @@ def run(argv=None):
     (hars
       | 'MapResponseBodiesB' >> beam.FlatMap(get_response_bodies_b)
       | 'WriteResponseBodiesB' >> beam.io.WriteToBigQuery(
+        get_bigquery_uri(known_args.input, 'response_bodies'),
+        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+    (hars
+      | 'MapResponseBodiesC' >> beam.FlatMap(get_response_bodies_c)
+      | 'WriteResponseBodiesC' >> beam.io.WriteToBigQuery(
+        get_bigquery_uri(known_args.input, 'response_bodies'),
+        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+    (hars
+      | 'MapResponseBodiesD' >> beam.FlatMap(get_response_bodies_d)
+      | 'WriteResponseBodiesD' >> beam.io.WriteToBigQuery(
         get_bigquery_uri(known_args.input, 'response_bodies'),
         schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
         write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
