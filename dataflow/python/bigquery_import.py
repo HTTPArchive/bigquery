@@ -132,7 +132,7 @@ def get_response_bodies_a(har):
     logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
     return
 
-  if hash_url(page_url) % 4 == 1:
+  if hash_url(page_url) % 4 != 1:
     return
 
   return get_response_bodies(har)
@@ -151,7 +151,7 @@ def get_response_bodies_b(har):
     logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
     return
 
-  if hash_url(page_url) % 4 == 2:
+  if hash_url(page_url) % 4 != 2:
     return
 
   return get_response_bodies(har)
@@ -170,7 +170,7 @@ def get_response_bodies_c(har):
     logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
     return
 
-  if hash_url(page_url) % 4 == 3:
+  if hash_url(page_url) % 4 != 3:
     return
 
   return get_response_bodies(har)
@@ -189,7 +189,7 @@ def get_response_bodies_d(har):
     logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
     return
 
-  if hash_url(page_url) % 4 == 0:
+  if hash_url(page_url) % 4 != 0:
     return
 
   return get_response_bodies(har)
