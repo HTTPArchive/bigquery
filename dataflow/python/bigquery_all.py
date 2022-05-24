@@ -150,7 +150,6 @@ def get_technologies(page):
   if not page:
     return
 
-  page_url = page.get('_URL')
   app_names = page.get('_detected_apps', {})
   categories = page.get('_detected', {})
 
@@ -203,24 +202,18 @@ def get_lighthouse_reports(har):
   if not report:
     return
 
-  page_url = get_page_url(har)
-
-  if not page_url:
-    logging.warning('Skipping lighthouse report: unable to get page URL (see preceding warning).')
-    return
-
   # Omit large UGC.
   report.get('audits').get('screenshot-thumbnails', {}).get('details', {}).pop('items', None)
 
   try:
     report_json = to_json(report)
   except:
-    logging.warning('Skipping Lighthouse report for "%s": unable to stringify as JSON.' % page_url)
+    logging.warning('Skipping Lighthouse report: unable to stringify as JSON.')
     return
 
   report_size = len(report_json)
   if report_size > MAX_CONTENT_SIZE:
-    logging.warning('Skipping Lighthouse report for "%s": Report size (%s) exceeded maximum content size of %s bytes.' % (page_url, report_size, MAX_CONTENT_SIZE))
+    logging.warning('Skipping Lighthouse report: Report size (%s) exceeded maximum content size of %s bytes.' % (report_size, MAX_CONTENT_SIZE))
     return
 
   return report_json
