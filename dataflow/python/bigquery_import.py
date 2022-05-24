@@ -33,7 +33,7 @@ def get_page(har):
   if metadata:
     # The page URL from metadata is more accurate.
     # See https://github.com/HTTPArchive/data-pipeline/issues/48
-    url = metadata.get('tested_url')
+    url = metadata.get('tested_url', url)
 
   try:
     payload_json = to_json(page)
