@@ -66,7 +66,7 @@ def get_page(har):
     'client': '',
     'page': url,
     'is_root_page': is_root_page,
-    'root_page': root_page
+    'root_page': root_page,
     'rank': rank,
     'wptid': wptid,
     'payload': payload_json,
