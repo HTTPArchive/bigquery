@@ -299,6 +299,15 @@ def get_requests(har, client, crawl_date):
   return requests
 
 
+def trim_request(request):
+  """Removes redundant fields from the request object."""
+
+  # Make a copy first so the response body can be used later.
+  request = deepcopy(request)
+  request.get('response').get('content').pop('text', None)
+  return request
+
+
 def to_json(obj):
   """Returns a JSON representation of the object.
 
