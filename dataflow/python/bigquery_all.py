@@ -20,7 +20,7 @@ from apache_beam.options.pipeline_options import SetupOptions
 MAX_CONTENT_SIZE = 10 * 1024 * 1024
 
 
-def get_page(har):
+def get_page(har, client, crawl_date):
   """Parses the page from a HAR object."""
 
   if not har:
@@ -28,9 +28,8 @@ def get_page(har):
 
   page = har.get('log').get('pages')[0]
   url = page.get('_URL')
-  client = 'unknown'
   wptid = page.get('testID')
-  date = '20%s-%s-%s' % (wptid[:2], wptid[2:4], wptid[4:6])
+  date = crawl_date
   is_root_page = True
   root_page = url
   rank = None
@@ -39,11 +38,11 @@ def get_page(har):
   if metadata:
     # The page URL from metadata is more accurate.
     # See https://github.com/HTTPArchive/data-pipeline/issues/48
-    url = metadata.get('tested_url')
-    client = metadata.get('layout', '').lower()
-    is_root_page = metadata.get('crawl_depth') == '0'
-    root_page = metadata.get('root_page_url')
-    rank = int(metadata.get('rank'))
+    url = metadata.get('tested_url', url)
+    client = metadata.get('layout', client).lower()
+    is_root_page = metadata.get('crawl_depth') == '0' or True
+    root_page = metadata.get('root_page_url', url)
+    rank = int(metadata.get('rank')) if metadata.get('rank') else None
 
   try:
     payload_json = to_json(page)
@@ -221,7 +220,7 @@ def get_lighthouse_reports(har):
   return report_json
 
 
-def get_requests(har):
+def get_requests(har, client, crawl_date):
   """Parses the requests from the HAR."""
 
   if not har:
@@ -229,9 +228,7 @@ def get_requests(har):
 
   page = har.get('log').get('pages')[0]
   page_url = page.get('_URL')
-  client = 'unknown'
-  wptid = page.get('testID')
-  date = '20%s-%s-%s' % (wptid[:2], wptid[2:4], wptid[4:6])
+  date = crawl_date
   is_root_page = True
   root_page = url
 
@@ -239,10 +236,10 @@ def get_requests(har):
   if metadata:
     # The page URL from metadata is more accurate.
     # See https://github.com/HTTPArchive/data-pipeline/issues/48
-    page_url = metadata.get('tested_url')
-    client = metadata.get('layout', '').lower()
-    is_root_page = metadata.get('crawl_depth') == '0'
-    root_page = metadata.get('root_page_url')
+    url = metadata.get('tested_url', url)
+    client = metadata.get('layout', client).lower()
+    is_root_page = metadata.get('crawl_depth') == '0' or True
+    root_page = metadata.get('root_page_url', url)
 
   entries = har.get('log').get('entries')
 
@@ -252,7 +249,7 @@ def get_requests(har):
 
     request_url = request.get('_full_url')
     is_main_document = request.get('_final_base_page')
-    index = request.get('_index')
+    index = int(request.get('_index'))
     request_headers = []
     response_headers = []
 
@@ -344,7 +341,7 @@ def from_json(str):
     return
 
 
-def get_crawl_date(release):
+def get_crawl_info(release):
   """Formats a release string into a BigQuery date."""
 
   client, date_string = release.split('-')
@@ -357,7 +354,7 @@ def get_crawl_date(release):
   date_obj = datetime.strptime(date_string, '%b_%d_%Y') # Mar_01_2020
   crawl_date = date_obj.strftime('%Y-%m-%d') # 2020-03-01
 
-  return crawl_date
+  return (client, crawl_date)
 
 
 def get_gcs_dir(release):
@@ -380,6 +377,7 @@ def run(argv=None):
 
   with beam.Pipeline(options=pipeline_options) as p:
     gcs_dir = get_gcs_dir(known_args.input)
+    client, crawl_date = get_crawl_date(known_args.input)
 
     hars = (p
       | beam.Create([gcs_dir])
@@ -388,7 +386,7 @@ def run(argv=None):
 
     (hars
       | 'MapPages' >> beam.FlatMap(
-        lambda har: get_page(har, get_crawl_date(known_args.input)))
+        lambda har: get_page(har, client, crawl_date))
       | 'WritePages' >> beam.io.WriteToBigQuery(
         'httparchive:all.pages',
         write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
@@ -396,7 +394,7 @@ def run(argv=None):
 
     (hars
       | 'MapRequests' >> beam.FlatMap(
-        lambda har: get_requests(har, get_crawl_date(known_args.input)))
+        lambda har: get_requests(har, client, crawl_date))
       | 'WriteRequests' >> beam.io.WriteToBigQuery(
         'httparchive:all.requests',
         write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
