@@ -93,7 +93,7 @@ def get_custom_metrics(page):
 
     custom_metrics[metric] = value
 
-  return custom_metrics
+  return to_json(custom_metrics)
 
 
 def get_features(page):
