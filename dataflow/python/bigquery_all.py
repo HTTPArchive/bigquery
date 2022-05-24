@@ -377,7 +377,7 @@ def run(argv=None):
 
   with beam.Pipeline(options=pipeline_options) as p:
     gcs_dir = get_gcs_dir(known_args.input)
-    client, crawl_date = get_crawl_date(known_args.input)
+    client, crawl_date = get_crawl_info(known_args.input)
 
     hars = (p
       | beam.Create([gcs_dir])
