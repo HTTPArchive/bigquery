@@ -5,7 +5,6 @@ from __future__ import absolute_import
 import argparse
 from copy import deepcopy
 from datetime import datetime
-from hashlib import sha256
 import json
 import logging
 import re
@@ -69,6 +68,7 @@ def get_page(har, client, crawl_date):
     'rank': rank,
     'wptid': wptid,
     'payload': payload_json,
+    # TODO: Integrate with the summary pipeline.
     'summary': '',
     'custom_metrics': custom_metrics,
     'lighthouse': lighthouse,
