@@ -134,6 +134,8 @@ def get_features(page):
           'type': feature_type,
           'id': ''
         })
+
+      return feature_names
     except:
       return []
 
