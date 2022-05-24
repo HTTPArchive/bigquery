@@ -165,13 +165,6 @@ def get_technologies(page):
   for app, info_list in app_names.items():
     if not info_list:
       continue
-    
-    if app not in technologies:
-      technologies[app] = {
-        'technology': app,
-        'info': [],
-        'categories': []
-      }
 
     # There may be multiple info values. Add each to the map.
     for info in info_list.split(','):
@@ -187,8 +180,15 @@ def get_technologies(page):
       else:
         info = app_id[len(app):].strip()
 
-      technologies[app]['info'].append(info)
-      technologies[app]['categories'].append(category)
+      technologies[app] = technologies.get(app, {
+        'technology': app,
+        'info': [],
+        'categories': []
+      })
+      
+      technologies.get(app).get('info').append(info)
+      if category not in technologies.get(app).get('categories'):
+        technologies.get(app).get('categories').append(category)
 
   return list(technologies.values())
 
