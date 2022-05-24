@@ -221,6 +221,87 @@ def get_lighthouse_reports(har):
   return report_json
 
 
+def get_requests(har):
+  """Parses the requests from the HAR."""
+
+  if not har:
+    return
+
+  page = har.get('log').get('pages')[0]
+  page_url = page.get('_URL')
+  client = 'unknown'
+  wptid = page.get('testID')
+  date = '20%s-%s-%s' % (wptid[:2], wptid[2:4], wptid[4:6])
+  is_root_page = True
+  root_page = url
+
+  metadata = page.get('_metadata')
+  if metadata:
+    # The page URL from metadata is more accurate.
+    # See https://github.com/HTTPArchive/data-pipeline/issues/48
+    page_url = metadata.get('tested_url')
+    client = metadata.get('layout', '').lower()
+    is_root_page = metadata.get('crawl_depth') == '0'
+    root_page = metadata.get('root_page_url')
+
+  entries = har.get('log').get('entries')
+
+  requests = []
+
+  for request in entries:
+
+    request_url = request.get('_full_url')
+    is_main_document = request.get('_final_base_page')
+    index = request.get('_index')
+    request_headers = []
+    response_headers = []
+
+    if request.get('request') and request.get('request').get('headers'):
+      request_headers = request.get('request').get('headers')
+      
+    if request.get('response') and request.get('response').get('headers'):
+      response_headers = request.get('response').get('headers')
+
+    try:
+      payload = to_json(trim_request(request))
+    except:
+      logging.warning('Skipping requests payload for "%s": unable to stringify as JSON.' % request_url)
+      continue
+
+    payload_size = len(payload)
+    if payload_size > MAX_CONTENT_SIZE:
+      logging.warning('Skipping requests payload for "%s": payload size (%s) exceeded maximum content size of %s bytes.' % (request_url, payload_size, MAX_CONTENT_SIZE))
+      continue
+
+    response_body = None
+    if request.get('response') and request.get('response').get('content'):
+      response_body = request.get('response').get('content').get('text', None)
+
+      if response_body != None:
+        response_body = response_body[:MAX_CONTENT_SIZE]
+
+    requests.append({
+      'date': date,
+      'client': client,
+      'page': page_url,
+      'is_root_page': is_root_page,
+      'root_page': root_page,
+      'url': request_url,
+      'is_main_document': is_main_document,
+      # TODO: Get the type from the summary data.
+      'type': '',
+      'index': index,
+      'payload': payload,
+      # TODO: Get the summary data.
+      'summary': '',
+      'request_headers': request_headers,
+      'response_headers': response_headers,
+      'response_body': response_body
+    })
+
+  return requests
+
+
 def to_json(obj):
   """Returns a JSON representation of the object.
 
@@ -263,6 +344,22 @@ def from_json(str):
     return
 
 
+def get_crawl_date(release):
+  """Formats a release string into a BigQuery date."""
+
+  client, date_string = release.split('-')
+
+  if client == 'chrome':
+    client = 'desktop'
+  elif client == 'android':
+    client = 'mobile'
+
+  date_obj = datetime.strptime(date_string, '%b_%d_%Y') # Mar_01_2020
+  crawl_date = date_obj.strftime('%Y-%m-%d') # 2020-03-01
+
+  return crawl_date
+
+
 def get_gcs_dir(release):
   """Formats a release string into a gs:// directory."""
 
@@ -290,9 +387,18 @@ def run(argv=None):
       | 'MapJSON' >> beam.Map(from_json))
 
     (hars
-      | 'MapPages' >> beam.FlatMap(get_page)
+      | 'MapPages' >> beam.FlatMap(
+        lambda har: get_page(har, get_crawl_date(known_args.input)))
       | 'WritePages' >> beam.io.WriteToBigQuery(
         'httparchive:all.pages',
+        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER))
+
+    (hars
+      | 'MapRequests' >> beam.FlatMap(
+        lambda har: get_requests(har, get_crawl_date(known_args.input)))
+      | 'WriteRequests' >> beam.io.WriteToBigQuery(
+        'httparchive:all.requests',
         write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
         create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER))
 
