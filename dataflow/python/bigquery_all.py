@@ -28,9 +28,11 @@ def get_page(har):
 
   page = har.get('log').get('pages')[0]
   url = page.get('_URL')
+  client = 'unknown'
   wptid = page.get('testID')
   date = '20%s-%s-%s' % (wptid[:2], wptid[2:4], wptid[4:6])
   is_root_page = True
+  root_page = url
   rank = None
 
   metadata = page.get('_metadata')
@@ -38,9 +40,9 @@ def get_page(har):
     # The page URL from metadata is more accurate.
     # See https://github.com/HTTPArchive/data-pipeline/issues/48
     url = metadata.get('tested_url')
-
-    is_root_page = metadata.get('crawl_depth') = '0'
-    
+    client = metadata.get('layout', '').lower()
+    is_root_page = metadata.get('crawl_depth') == '0'
+    root_page = metadata.get('root_page_url')
     rank = int(metadata.get('rank'))
 
   try:
@@ -64,6 +66,7 @@ def get_page(har):
     'client': '',
     'page': url,
     'is_root_page': is_root_page,
+    'root_page': root_page
     'rank': rank,
     'wptid': wptid,
     'payload': payload_json,
