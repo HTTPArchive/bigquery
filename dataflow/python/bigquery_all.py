@@ -75,7 +75,7 @@ def get_page(har):
     'lighthouse': lighthouse,
     'features': features,
     'technologies': technologies,
-    'metadata': metadata
+    'metadata': to_json(metadata)
   }]
 
 
