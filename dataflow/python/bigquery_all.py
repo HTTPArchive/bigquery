@@ -139,8 +139,8 @@ def get_features(page):
 
   id_pattern = re.compile(r'^Feature_(\d+)$')
 
-  return get_feature_names(blink_features.get('Features'), 'default') +
-      get_feature_names(blink_features.get('CSSFeatures'), 'css') +
+  return get_feature_names(blink_features.get('Features'), 'default') + \
+      get_feature_names(blink_features.get('CSSFeatures'), 'css') + \
       get_feature_names(blink_features.get('AnimatedCSSFeatures'), 'animated-css')
 
 
@@ -271,7 +271,7 @@ def from_json(str):
 def get_gcs_dir(release):
   """Formats a release string into a gs:// directory."""
 
-  return 'gs://httparchive/crawls/%s/' % release
+  return 'gs://httparchive/%s/' % release
 
 
 def run(argv=None):
