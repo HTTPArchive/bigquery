@@ -230,16 +230,16 @@ def get_requests(har, client, crawl_date):
   page_url = page.get('_URL')
   date = crawl_date
   is_root_page = True
-  root_page = url
+  root_page = page_url
 
   metadata = page.get('_metadata')
   if metadata:
     # The page URL from metadata is more accurate.
     # See https://github.com/HTTPArchive/data-pipeline/issues/48
-    url = metadata.get('tested_url', url)
+    page_url = metadata.get('tested_url', page_url)
     client = metadata.get('layout', client).lower()
     is_root_page = metadata.get('crawl_depth') == '0' or True
-    root_page = metadata.get('root_page_url', url)
+    root_page = metadata.get('root_page_url', page_url)
 
   entries = har.get('log').get('entries')
 
