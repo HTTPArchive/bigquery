@@ -63,7 +63,7 @@ def get_page(har):
 
   return [{
     'date': date,
-    'client': '',
+    'client': client,
     'page': url,
     'is_root_page': is_root_page,
     'root_page': root_page,
