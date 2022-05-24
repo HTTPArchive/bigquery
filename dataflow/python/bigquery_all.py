@@ -40,7 +40,7 @@ def get_page(har, client, crawl_date):
     # See https://github.com/HTTPArchive/data-pipeline/issues/48
     url = metadata.get('tested_url', url)
     client = metadata.get('layout', client).lower()
-    is_root_page = metadata.get('crawl_depth') == '0' or True
+    is_root_page = metadata.get('crawl_depth', '0') == '0'
     root_page = metadata.get('root_page_url', url)
     rank = int(metadata.get('rank')) if metadata.get('rank') else None
 
@@ -238,7 +238,7 @@ def get_requests(har, client, crawl_date):
     # See https://github.com/HTTPArchive/data-pipeline/issues/48
     page_url = metadata.get('tested_url', page_url)
     client = metadata.get('layout', client).lower()
-    is_root_page = metadata.get('crawl_depth') == '0' or True
+    is_root_page = metadata.get('crawl_depth', '0') == '0'
     root_page = metadata.get('root_page_url', page_url)
 
   entries = har.get('log').get('entries')
