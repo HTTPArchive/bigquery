@@ -248,7 +248,7 @@ def get_requests(har, client, crawl_date):
   for request in entries:
 
     request_url = request.get('_full_url')
-    is_main_document = request.get('_final_base_page')
+    is_main_document = request.get('_final_base_page', False)
     index = int(request.get('_index'))
     request_headers = []
     response_headers = []
