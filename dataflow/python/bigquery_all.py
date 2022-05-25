@@ -244,14 +244,17 @@ def get_requests(har, client, crawl_date):
   entries = har.get('log').get('entries')
 
   requests = []
+  index = 0
 
   for request in entries:
 
     request_url = request.get('_full_url')
     is_main_document = request.get('_final_base_page', False)
-    index = int(request.get('_index'))
+    index = int(request.get('_index', index))
     request_headers = []
     response_headers = []
+
+    index += 1
 
     if request.get('request') and request.get('request').get('headers'):
       request_headers = request.get('request').get('headers')
