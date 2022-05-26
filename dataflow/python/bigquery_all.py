@@ -401,6 +401,7 @@ def run(argv=None):
         lambda har: get_page(har, client, crawl_date))
       | 'WritePages' >> beam.io.WriteToBigQuery(
         'httparchive:all.pages',
+        schema='SCHEMA_AUTODETECT',
         write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
         create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER))
 
@@ -409,6 +410,7 @@ def run(argv=None):
         lambda har: get_requests(har, client, crawl_date))
       | 'WriteRequests' >> beam.io.WriteToBigQuery(
         'httparchive:all.requests',
+        schema='SCHEMA_AUTODETECT',
         write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
         create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER))
 
