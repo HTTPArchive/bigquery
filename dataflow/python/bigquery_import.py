@@ -69,7 +69,10 @@ def get_page_url(har):
 def partition_step(fn, har, index):
   """Partitions functions across multiple concurrent steps."""
 
+  logging.info(f'partitioning step {fn}, index {index}')
+
   if not har:
+    logging.warning('Unable to partition step, null HAR.')
     return
 
   page_url = get_page_url(har)
@@ -78,7 +81,9 @@ def partition_step(fn, har, index):
     logging.warning('Skipping HAR: unable to get page URL (see preceding warning).')
     return
 
-  if hash_url(page_url) % NUM_PARTITIONS != index:
+  hash = hash_url(page_url)
+  if hash % NUM_PARTITIONS != index:
+    logging.info(f'Skipping partition. {hash} % {NUM_PARTITIONS} != {index}')
     return
   
   return fn(har)
