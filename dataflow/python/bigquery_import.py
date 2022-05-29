@@ -374,7 +374,7 @@ def run(argv=None):
     for i in range(NUM_PARTITIONS):
       (hars
         | f'MapRequests{i}' >> beam.FlatMap(
-          lambda i: lambda har: partition_step(get_requests, har, i)(i))
+          (lambda i: lambda har: partition_step(get_requests, har, i))(i))
         | f'WriteRequests{i}' >> beam.io.WriteToBigQuery(
           get_bigquery_uri(known_args.input, 'requests'),
           schema='page:STRING, url:STRING, payload:STRING',
@@ -383,7 +383,7 @@ def run(argv=None):
 
       (hars
         | f'MapResponseBodies{i}' >> beam.FlatMap(
-          lambda i: lambda har: partition_step(get_response_bodies, har, i)(i))
+          (lambda i: lambda har: partition_step(get_response_bodies, har, i))(i))
         | f'WriteResponseBodies{i}' >> beam.io.WriteToBigQuery(
           get_bigquery_uri(known_args.input, 'response_bodies'),
           schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
