@@ -18,6 +18,8 @@ from apache_beam.options.pipeline_options import SetupOptions
 
 # BigQuery can handle rows up to 100 MB.
 MAX_CONTENT_SIZE = 2 * 1024 * 1024
+# Number of times to partition the requests tables.
+NUM_PARTITIONS = 4
 
 
 def get_page(har):
@@ -62,6 +64,24 @@ def get_page_url(har):
     return
 
   return page[0].get('url')
+
+
+def partition_step(fn, har, index):
+  """Partitions functions across multiple concurrent steps."""
+
+  if not har:
+    return
+
+  page_url = get_page_url(har)
+
+  if not page_url:
+    logging.warning('Skipping HAR: unable to get page URL (see preceding warning).')
+    return
+
+  if hash_url(page_url) % NUM_PARTITIONS != index:
+    return
+  
+  return fn(har)
 
 
 def get_requests(har):
@@ -118,81 +138,6 @@ def trim_request(request):
 def hash_url(url):
   """Hashes a given URL to a process-stable integer value."""
   return int(sha256(url.encode('utf-8')).hexdigest(), 16)
-
-
-def get_response_bodies_a(har):
-  """Parse response bodies (Part 1 of 4)."""
-
-  if not har:
-    return
-
-  page_url = get_page_url(har)
-
-  if not page_url:
-    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
-    return
-
-  if hash_url(page_url) % 4 != 1:
-    return
-
-  return get_response_bodies(har)
-
-
-
-def get_response_bodies_b(har):
-  """Parse response bodies (Part 2 of 4)."""
-
-  if not har:
-    return
-
-  page_url = get_page_url(har)
-
-  if not page_url:
-    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
-    return
-
-  if hash_url(page_url) % 4 != 2:
-    return
-
-  return get_response_bodies(har)
-
-
-
-def get_response_bodies_c(har):
-  """Parse response bodies (Part 3 of 4)."""
-
-  if not har:
-    return
-
-  page_url = get_page_url(har)
-
-  if not page_url:
-    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
-    return
-
-  if hash_url(page_url) % 4 != 3:
-    return
-
-  return get_response_bodies(har)
-
-
-
-def get_response_bodies_d(har):
-  """Parse response bodies (Part 4 of 4)."""
-
-  if not har:
-    return
-
-  page_url = get_page_url(har)
-
-  if not page_url:
-    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
-    return
-
-  if hash_url(page_url) % 4 != 0:
-    return
-
-  return get_response_bodies(har)
 
 
 def get_response_bodies(har):
@@ -406,46 +351,6 @@ def run(argv=None):
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
     (hars
-      | 'MapRequests' >> beam.FlatMap(get_requests)
-      | 'WriteRequests' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'requests'),
-        schema='page:STRING, url:STRING, payload:STRING',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-    (hars
-      | 'MapResponseBodiesA' >> beam.FlatMap(get_response_bodies_a)
-      | 'WriteResponseBodiesA' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'response_bodies'),
-        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-    (hars
-      | 'MapResponseBodiesB' >> beam.FlatMap(get_response_bodies_b)
-      | 'WriteResponseBodiesB' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'response_bodies'),
-        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-    (hars
-      | 'MapResponseBodiesC' >> beam.FlatMap(get_response_bodies_c)
-      | 'WriteResponseBodiesC' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'response_bodies'),
-        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-    (hars
-      | 'MapResponseBodiesD' >> beam.FlatMap(get_response_bodies_d)
-      | 'WriteResponseBodiesD' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'response_bodies'),
-        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-    (hars
       | 'MapTechnologies' >> beam.FlatMap(get_technologies)
       | 'WriteTechnologies' >> beam.io.WriteToBigQuery(
         get_bigquery_uri(known_args.input, 'technologies'),
@@ -460,6 +365,23 @@ def run(argv=None):
         schema='url:STRING, report:STRING',
         write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
         create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+    for i in range(NUM_PARTITIONS):
+      (hars
+        | f'MapRequests{i}' >> beam.FlatMap(lambda har: partition_step(get_requests, har, i))
+        | f'WriteRequests{i}' >> beam.io.WriteToBigQuery(
+          get_bigquery_uri(known_args.input, 'requests'),
+          schema='page:STRING, url:STRING, payload:STRING',
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+      (hars
+        | f'MapResponseBodies{i}' >> beam.FlatMap(lambda har: partition_step(get_response_bodies, har, i))
+        | f'WriteResponseBodies{i}' >> beam.io.WriteToBigQuery(
+          get_bigquery_uri(known_args.input, 'response_bodies'),
+          schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
 
 if __name__ == '__main__':
