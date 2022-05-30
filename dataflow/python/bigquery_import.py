@@ -354,7 +354,7 @@ def run(argv=None):
         | f'WritePages{i}' >> beam.io.WriteToBigQuery(
           get_bigquery_uri(known_args.input, 'pages'),
           schema='url:STRING, payload:STRING',
-          write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
           create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
       (hars
@@ -363,16 +363,16 @@ def run(argv=None):
         | f'WriteTechnologies{i}' >> beam.io.WriteToBigQuery(
           get_bigquery_uri(known_args.input, 'technologies'),
           schema='url:STRING, category:STRING, app:STRING, info:STRING',
-          write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
           create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
       (hars
-        | f'MapLighthouseReport{i}s' >> beam.FlatMap(
+        | f'MapLighthouseReports{i}' >> beam.FlatMap(
           (lambda i: lambda har: partition_step(get_lighthouse_reports, har, i))(i))
         | f'WriteLighthouseReports{i}' >> beam.io.WriteToBigQuery(
           get_bigquery_uri(known_args.input, 'lighthouse'),
           schema='url:STRING, report:STRING',
-          write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
           create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
       (hars
         | f'MapRequests{i}' >> beam.FlatMap(
