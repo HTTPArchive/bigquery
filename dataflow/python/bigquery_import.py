@@ -18,6 +18,8 @@ from apache_beam.options.pipeline_options import SetupOptions
 
 # BigQuery can handle rows up to 100 MB.
 MAX_CONTENT_SIZE = 2 * 1024 * 1024
+# Number of times to partition the requests tables.
+NUM_PARTITIONS = 4
 
 
 def get_page(har):
@@ -33,7 +35,7 @@ def get_page(har):
   if metadata:
     # The page URL from metadata is more accurate.
     # See https://github.com/HTTPArchive/data-pipeline/issues/48
-    url = metadata.get('tested_url')
+    url = metadata.get('tested_url', url)
 
   try:
     payload_json = to_json(page)
@@ -62,6 +64,29 @@ def get_page_url(har):
     return
 
   return page[0].get('url')
+
+
+def partition_step(fn, har, index):
+  """Partitions functions across multiple concurrent steps."""
+
+  logging.info(f'partitioning step {fn}, index {index}')
+
+  if not har:
+    logging.warning('Unable to partition step, null HAR.')
+    return
+
+  page_url = get_page_url(har)
+
+  if not page_url:
+    logging.warning('Skipping HAR: unable to get page URL (see preceding warning).')
+    return
+
+  hash = hash_url(page_url)
+  if hash % NUM_PARTITIONS != index:
+    logging.info(f'Skipping partition. {hash} % {NUM_PARTITIONS} != {index}')
+    return
+  
+  return fn(har)
 
 
 def get_requests(har):
@@ -118,43 +143,6 @@ def trim_request(request):
 def hash_url(url):
   """Hashes a given URL to a process-stable integer value."""
   return int(sha256(url.encode('utf-8')).hexdigest(), 16)
-
-
-def get_response_bodies_a(har):
-  """Parse response bodies if the URL hashes to an odd number."""
-
-  if not har:
-    return
-
-  page_url = get_page_url(har)
-
-  if not page_url:
-    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
-    return
-
-  if hash_url(page_url) % 2 == 0:
-    return
-
-  return get_response_bodies(har)
-
-
-
-def get_response_bodies_b(har):
-  """Parse response bodies if the URL hashes to an even number."""
-
-  if not har:
-    return
-
-  page_url = get_page_url(har)
-
-  if not page_url:
-    logging.warning('Skipping response bodies payload: unable to get page URL (see preceding warning).')
-    return
-
-  if hash_url(page_url) % 2 == 1:
-    return
-
-  return get_response_bodies(har)
 
 
 def get_response_bodies(har):
@@ -359,53 +347,50 @@ def run(argv=None):
       | beam.io.ReadAllFromText()
       | 'MapJSON' >> beam.Map(from_json))
 
-    (hars
-      | 'MapPages' >> beam.FlatMap(get_page)
-      | 'WritePages' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'pages'),
-        schema='url:STRING, payload:STRING',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+    for i in range(NUM_PARTITIONS):
+      (hars
+        | f'MapPages{i}' >> beam.FlatMap(
+          (lambda i: lambda har: partition_step(get_page, har, i))(i))
+        | f'WritePages{i}' >> beam.io.WriteToBigQuery(
+          get_bigquery_uri(known_args.input, 'pages'),
+          schema='url:STRING, payload:STRING',
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
-    (hars
-      | 'MapRequests' >> beam.FlatMap(get_requests)
-      | 'WriteRequests' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'requests'),
-        schema='page:STRING, url:STRING, payload:STRING',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+      (hars
+        | f'MapTechnologies{i}' >> beam.FlatMap(
+          (lambda i: lambda har: partition_step(get_technologies, har, i))(i))
+        | f'WriteTechnologies{i}' >> beam.io.WriteToBigQuery(
+          get_bigquery_uri(known_args.input, 'technologies'),
+          schema='url:STRING, category:STRING, app:STRING, info:STRING',
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
-    (hars
-      | 'MapResponseBodiesA' >> beam.FlatMap(get_response_bodies_a)
-      | 'WriteResponseBodiesA' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'response_bodies'),
-        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+      (hars
+        | f'MapLighthouseReports{i}' >> beam.FlatMap(
+          (lambda i: lambda har: partition_step(get_lighthouse_reports, har, i))(i))
+        | f'WriteLighthouseReports{i}' >> beam.io.WriteToBigQuery(
+          get_bigquery_uri(known_args.input, 'lighthouse'),
+          schema='url:STRING, report:STRING',
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+      (hars
+        | f'MapRequests{i}' >> beam.FlatMap(
+          (lambda i: lambda har: partition_step(get_requests, har, i))(i))
+        | f'WriteRequests{i}' >> beam.io.WriteToBigQuery(
+          get_bigquery_uri(known_args.input, 'requests'),
+          schema='page:STRING, url:STRING, payload:STRING',
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
-    (hars
-      | 'MapResponseBodiesB' >> beam.FlatMap(get_response_bodies_b)
-      | 'WriteResponseBodiesB' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'response_bodies'),
-        schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-    (hars
-      | 'MapTechnologies' >> beam.FlatMap(get_technologies)
-      | 'WriteTechnologies' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'technologies'),
-        schema='url:STRING, category:STRING, app:STRING, info:STRING',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-    (hars
-      | 'MapLighthouseReports' >> beam.FlatMap(get_lighthouse_reports)
-      | 'WriteLighthouseReports' >> beam.io.WriteToBigQuery(
-        get_bigquery_uri(known_args.input, 'lighthouse'),
-        schema='url:STRING, report:STRING',
-        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+      (hars
+        | f'MapResponseBodies{i}' >> beam.FlatMap(
+          (lambda i: lambda har: partition_step(get_response_bodies, har, i))(i))
+        | f'WriteResponseBodies{i}' >> beam.io.WriteToBigQuery(
+          get_bigquery_uri(known_args.input, 'response_bodies'),
+          schema='page:STRING, url:STRING, body:STRING, truncated:BOOLEAN',
+          write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+          create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
 
 if __name__ == '__main__':
