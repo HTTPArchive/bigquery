@@ -251,6 +251,8 @@ else
               fi
             elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
               date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) > \"$max_date\""
+              # Skip 2022_05_12 tables
+              date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) != \"2021_05_12\""
               if [[ -n "$YYYY_MM_DD" ]]; then
                 # If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
                 date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
@@ -273,6 +275,8 @@ else
           elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
             # If a date is given, then only run up until then (in case next month is mid run as don't wanna get just desktop data)
             date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
+            # Skip 2022_05_12 tables
+            date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) != \"2021_05_12\""
           fi
 
           echo -e "Force Mode=${FORCE}. Generating $gs_lens_dir$metric timeseries from start until ${YYYY_MM_DD}."
@@ -285,6 +289,8 @@ else
           date_join="yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
         elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
           date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
+          # Skip 2022_05_12 tables
+          date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) != \"2021_05_12\""
         fi
 
         echo -e "Timeseries does not exist. Generating $gs_lens_dir$metric timeseries from start until ${YYYY_MM_DD}"
