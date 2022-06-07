@@ -75,6 +75,12 @@ def partition_step(fn, har, index):
     logging.warning('Unable to partition step, null HAR.')
     return
 
+  page = har.get('log').get('pages')[0]
+  metadata = page.get('_metadata')
+  if metadata.get('crawl_depth') and metadata.get('crawl_depth') != '0':
+    # Only home pages have a crawl depth of 0.
+    return
+
   page_url = get_page_url(har)
 
   if not page_url:
