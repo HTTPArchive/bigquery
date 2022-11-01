@@ -15,7 +15,7 @@ FROM (
       `httparchive.summary_pages.${YYYY_MM_DD}_*`
     GROUP BY
       bin,
-      client ) )
+      client))
 ORDER BY
   bin,
   client
