@@ -31,7 +31,7 @@ FROM (
       report IS NOT NULL
     GROUP BY
       bin,
-      client ) )
+      client))
 ORDER BY
   bin,
   client

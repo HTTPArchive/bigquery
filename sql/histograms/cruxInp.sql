@@ -21,7 +21,7 @@ FROM (
       UNNEST(bins) AS bin
     GROUP BY
       bin,
-      client ) )
+      client))
 ORDER BY
   bin,
   client

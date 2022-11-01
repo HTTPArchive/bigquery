@@ -18,7 +18,7 @@ FROM (
       client
     HAVING
       bin IS NOT NULL AND
-      bin >= 0) )
+      bin >= 0))
 ORDER BY
   bin,
   client
