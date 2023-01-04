@@ -11,7 +11,7 @@ templater = jinja
 ## Comma separated list of rules to check, or None for all
 rules = None
 ## Comma separated list of rules to exclude, or None
-exclude_rules = L010,L011,L014,L016,L020,L026,L027,L028,L029,L030,L031,L032,L034,L035,L036,L037,L042,L043,L051,L060
+exclude_rules = L010,L011,L014,L016,L020,L026,L027,L028,L029,L030,L031,L032,L034,L035,L036,L037,L042,L043,L051,L060,L071
 # L010 - Temporarily turn off due to bug in SQLFLuff. Needs SQLFLuff 0.9.2
 # L011 - We don't always alias tables with AS ("FROM table1 AS tb1" instead of "FROM table1 tb1"). Do for columns but not for tables.
 # L014 - Unquoted identifiers (e.g. column names) will be mixed case so don't enforce case
@@ -32,6 +32,7 @@ exclude_rules = L010,L011,L014,L016,L020,L026,L027,L028,L029,L030,L031,L032,L034
 # L043 - Use coalesce instead of case if you can. But it's clearer!?
 # L051 - INNER JOIN must be fully qualified. Probably should use this but not our style.
 # L060 - Use COALESCE instead of IFNULL or NVL. We think ISNULL is clearer.
+# L071 - Turn off until https://github.com/sqlfluff/sqlfluff/issues/4188 is addressed
 # The depth to recursively parse to (0 for unlimited)
 recurse = 0
 # Below controls SQLFluff output, see max_line_length for SQL output
@@ -134,12 +135,6 @@ unquoted_identifiers_policy = all
 [sqlfluff:rules:L003]
 hanging_indents = True
 
-# TODO - remove once 1.4.1 fully rolled out as this has been replaced by
-# [sqlfluff:layout:type:binary_operator]
-# line_position = trailing
-[sqlfluff:rules:L007]
-operator_new_lines = before
-
 [sqlfluff:rules:L010]
 # Keywords
 capitalisation_policy = upper
@@ -175,4 +170,8 @@ ignore_words = None
 preferred_quoted_literal_style = single_quotes
 # Disabled for dialects that do not support single and double quotes for quoted literals (e.g. Postgres)
 force_enable = False
+
+[sqlfluff:rules:L066]
+min_alias_length = None
+max_alias_length = None
 
