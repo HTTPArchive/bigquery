@@ -1,7 +1,14 @@
-0 15 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh `date +\%b_1_\%Y`'  >> /var/log/HAimport.log 2>&1
-0  8 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh mobile_`date +\%b_1_\%Y`'  >> /var/log/HAimport.log 2>&1
+#0 15 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh `date +\%b_1_\%Y`'  >> /var/log/HAimport.log 2>&1
+#0  8 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_csv.sh mobile_`date +\%b_1_\%Y`'  >> /var/log/HAimport.log 2>&1
 
-0 10 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_har.sh chrome' >> /var/log/HA-import-har-chrome.log 2>&1
-0 11 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_har.sh android' >> /var/log/HA-import-har-android.log 2>&1
+#0 10 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_har.sh chrome' >> /var/log/HA-import-har-chrome.log 2>&1
+#0 11 * * * /bin/bash -l -c 'cd /home/igrigorik/code && ./sync_har.sh android' >> /var/log/HA-import-har-android.log 2>&1
 
-0 7 15 * * /bin/bash -l -c 'cd /home/igrigorik/code && sql/generate_reports.sh -th `date -d "-1 month" "+\%Y_\%m_01"` -r "*crux*" -l ALL' >> /var/log/crux_reruns.log 2>&1
+# Attempt to run the reports everyday
+0  8 * * * /bin/bash -l -c 'cd /home/igrigorik/code && sql/generate_reports.sh -th `date "+\%Y_\%m_01"` -l ALL' >> /var/log/generate_reports.log 2>&1
+
+# Run the reports on the 2nd to pick up blink table updates
+0  7 2 * * /bin/bash -l -c 'cd /home/igrigorik/code && sql/generate_reports.sh -th `date -d "-1 month" "+\%Y_\%m_01"` -l ALL' >> /var/log/generate_last_months_reports.log 2>&1
+
+# Run the CrUX reports on 15th
+0  7 15 * * /bin/bash -l -c 'cd /home/igrigorik/code && sql/generate_reports.sh -th `date -d "-1 month" "+\%Y_\%m_01"` -r "*crux*" -l ALL' >> /var/log/crux_reruns.log 2>&1
