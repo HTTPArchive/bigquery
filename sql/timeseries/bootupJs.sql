@@ -14,7 +14,7 @@ FROM (
     CAST(IFNULL(
       JSON_EXTRACT(report, '$.audits.bootup-time.numericValue'),
       JSON_EXTRACT(report, '$.audits.bootup-time.rawValue')
-      ) AS FLOAT64) / 1000 AS value
+    ) AS FLOAT64) / 1000 AS value
   FROM
     `httparchive.lighthouse.*`
 )

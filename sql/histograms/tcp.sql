@@ -17,7 +17,9 @@ FROM (
       _connections > 0
     GROUP BY
       bin,
-      client))
+      client
+  )
+)
 ORDER BY
   bin,
   client

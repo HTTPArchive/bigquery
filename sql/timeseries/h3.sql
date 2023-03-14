@@ -21,7 +21,10 @@ SELECT
         reqHttpVersion IN ('HTTP/3', 'h3', 'h3-29') OR
         REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3=%' OR
         REGEXP_EXTRACT(REGEXP_EXTRACT(respOtherHeaders, r'alt-svc = (.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3-29=%',
-        1, 0)) * 100 / COUNT(0), 2) AS percent
+        1, 0
+      )
+    ) * 100 / COUNT(0), 2
+  ) AS percent
 FROM
   `httparchive.summary_requests.*`
 WHERE

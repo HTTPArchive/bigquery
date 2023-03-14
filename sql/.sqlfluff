@@ -112,7 +112,7 @@ unwrap_wrapped_queries = True
 apply_dbt_builtins = True
 
 [sqlfluff:templater:jinja:context]
-BLINK_DATE_JOIN=
+BLINK_DATE_JOIN="AND 1=2"
 
 [sqlfluff:templater:jinja:macros]
 # Macros provided as builtins for dbt projects

@@ -316,10 +316,10 @@ else
             # For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
             if [[ -z "${date_join}" ]]; then
               sql=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-              | sed -e "s/ {{ BLINK_DATE_JOIN }}//g")
+              | sed -e "s/   {{ BLINK_DATE_JOIN }}//g")
             else
               sql=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-                | sed -e "s/{{ BLINK_DATE_JOIN }}/AND $date_join/g")
+                | sed -e "s/  {{ BLINK_DATE_JOIN }}/AND $date_join/g")
             fi
           else
             echo "blink_features.usage queries not supported for this lens so skipping lens"

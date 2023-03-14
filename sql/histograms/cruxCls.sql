@@ -35,12 +35,15 @@ FROM (
         form_factor,
         spreadBins(layout_instability.cumulative_layout_shift.histogram.bin) AS bins
       FROM
-        `chrome-ux-report.all.${YYYYMM}`)
+        `chrome-ux-report.all.${YYYYMM}`
+    )
     CROSS JOIN
       UNNEST(bins) AS bin
     GROUP BY
       bin,
-      client))
+      client
+  )
+)
 ORDER BY
   bin,
   client
