@@ -138,7 +138,7 @@ else
         if [[ $metric == crux* ]]; then
           if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
             echo "Using alternative crux lens join"
-            lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | sed -e "s/--noqa: disable=PRS//g" | tr '\n' ' ')"
+            lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | tr '\n' ' ')"
           else
             echo "CrUX queries do not support histograms for this lens so skipping"
             continue
