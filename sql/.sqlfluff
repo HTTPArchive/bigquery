@@ -31,7 +31,7 @@ indented_using_on = False
 line_position = trailing
 
 [sqlfluff:templater:jinja:context]
-BLINK_DATE_JOIN=
+BLINK_DATE_JOIN="AND 1=2"
 
 [sqlfluff:rules:capitalisation.keywords]
 # Keywords

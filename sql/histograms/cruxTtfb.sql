@@ -16,12 +16,15 @@ FROM (
         form_factor,
         experimental.time_to_first_byte.histogram.bin AS bins
       FROM
-        `chrome-ux-report.all.${YYYYMM}`)
+        `chrome-ux-report.all.${YYYYMM}`
+    )
     CROSS JOIN
       UNNEST(bins) AS bin
     GROUP BY
       bin,
-      client))
+      client
+  )
+)
 ORDER BY
   bin,
   client
