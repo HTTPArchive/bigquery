@@ -1,6 +1,6 @@
 #standardSQL
 SELECT
-  *
+  * -- noqa: disable=L044
 FROM
   `httparchive.core_web_vitals.technologies`
 WHERE
