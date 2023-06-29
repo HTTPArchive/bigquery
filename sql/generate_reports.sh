@@ -23,6 +23,7 @@ set -o pipefail
 
 BQ_CMD="bq --format prettyjson --project_id httparchive query --max_rows 1000000"
 FORCE=0
+GENERATE_CWVTECH=0
 GENERATE_HISTOGRAM=0
 GENERATE_TIMESERIES=0
 LENS_ARG=""
@@ -32,6 +33,9 @@ VERBOSE=0
 # Read the flags.
 while getopts ":ftvh:l:r:" opt; do
   case "${opt}" in
+    c)
+      GENERATE_CWVTECH=1
+      ;;
     h)
       GENERATE_HISTOGRAM=1
       YYYY_MM_DD=${OPTARG}
@@ -57,8 +61,8 @@ while getopts ":ftvh:l:r:" opt; do
 done
 
 # Exit early if there's nothing to do.
-if [ $GENERATE_HISTOGRAM -eq 0 -a $GENERATE_TIMESERIES -eq 0 ]; then
-  echo -e "You must provide one or both -t or -h flags." >&2
+if [ $GENERATE_CWVTECH -eq 0 -a $GENERATE_HISTOGRAM -eq 0 -a $GENERATE_TIMESERIES -eq 0 ]; then
+  echo -e "You must provide at least one of -c, -t or -h flags." >&2
   echo -e "For example: sql/generateReports.sh -t -h 2017_08_01" >&2
   exit 1
 fi
@@ -79,6 +83,39 @@ if [ $GENERATE_HISTOGRAM -ne 0 -a $? -ne 0 ]; then
   bq show "httparchive:summary_pages.${YYYY_MM_DD}_desktop" | head -5
   bq show "httparchive:summary_pages.${YYYY_MM_DD}_mobile" | head -5
   exit 1
+fi
+
+
+if [ $GENERATE_CWVTECH -eq 0 ]; then
+  echo -e "Skipping CWV Technology Report queries"
+else
+  echo -e "Generating CWV Technology Report queries"
+
+  for query in ['technologies.sql', 'geos.sql']; do
+    if [ ${VERBOSE} -eq 1 ]; then
+      echo "Running this query:"
+      echo "${sql}\n"
+    fi
+
+    # Run the histogram query on BigQuery.
+    START_TIME=$SECONDS
+    result=$(echo "${sql}" | $BQ_CMD)
+
+    # Make sure the query succeeded.
+    if [ $? -eq 0 ]; then
+      ELAPSED_TIME=$(($SECONDS - $START_TIME))
+      if [[ $LENS != "" ]]; then
+        echo "$metric for $LENS took $ELAPSED_TIME seconds"
+      else
+        echo "$metric took $ELAPSED_TIME seconds"
+      fi
+      # Upload the response to Google Storage.
+      echo $result \
+        | gsutil  -h "Content-Type:application/json" cp - $gs_url
+    else
+      echo $result >&2
+    fi
+  done
 fi
 
 if [ $GENERATE_HISTOGRAM -eq 0 ]; then
@@ -138,7 +175,7 @@ else
         if [[ $metric == crux* ]]; then
           if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
             echo "Using alternative crux lens join"
-            lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | sed -e "s/--noqa: disable=PRS//g" | tr '\n' ' ')"
+            lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | tr '\n' ' ')"
           else
             echo "CrUX queries do not support histograms for this lens so skipping"
             continue
@@ -381,7 +418,7 @@ else
         fi
 
         # If it's a partial run, then combine with the current results.
-        if [[ $FORCE -eq 0 && -n "${current_contents}" ]]; then
+        if [[ $FORCE -eq 0 && -n "${current_contents}" && $metric != crux* ]]; then
           result=$(echo ${result} ${current_contents} | jq '.+= input')
         fi
 
