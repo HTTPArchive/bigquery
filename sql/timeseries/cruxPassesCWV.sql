@@ -15,8 +15,8 @@ SELECT
   IF(device = 'desktop', 'desktop', 'mobile') AS client,
   SAFE_DIVIDE(
     COUNT(DISTINCT IF(
-      /* FID can be null and is not mandatory for CWV */
-      (p75_fid IS NULL OR IS_GOOD(fast_fid, avg_fid, slow_fid)) AND
+      /* INP can be null and is not mandatory for CWV */
+      (p75_inp IS NULL OR IS_GOOD(fast_inp, avg_inp, slow_in[)) AND
       IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AND
       IS_GOOD(small_cls, medium_cls, large_cls), origin, NULL
     )),
