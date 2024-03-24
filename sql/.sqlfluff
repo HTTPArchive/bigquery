@@ -34,6 +34,7 @@ exclude_rules = AL01,AL04,AL07,AL09,AM03,AM05,CP02,CP03,CV02,LT05,LT09,RF01,RF02
 [sqlfluff:indentation]
 tab_space_size = 2
 indent_unit = space
+indented_using_on = False
 
 [sqlfluff:layout:type:binary_operator]
 line_position = trailing
