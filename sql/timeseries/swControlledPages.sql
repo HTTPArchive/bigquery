@@ -8,8 +8,8 @@ SELECT
       IF(IFNULL(
         JSON_EXTRACT(payload, '$._blinkFeatureFirstUsed.Features.ServiceWorkerControlledPage'),
         JSON_EXTRACT(payload, '$._blinkFeatureFirstUsed.Features.990')
-      ) IS NOT NULL, 1, 0)) * 100 / COUNT(0
-    ),
+      ) IS NOT NULL, 1, 0)
+    ) * 100 / COUNT(0),
     2
   ) AS percent
 FROM

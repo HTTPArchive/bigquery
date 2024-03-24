@@ -43,14 +43,16 @@ JOIN (
         tech_url
     )
   ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || '_' || client)
-  WHERE 1 = 1
+  WHERE
+    1 = 1
     {{ BLINK_DATE_JOIN }}
   GROUP BY
     yyyymmdd,
     client
 )
 USING (yyyymmdd, client)
-WHERE 1 = 1
+WHERE
+  1 = 1
   {{ BLINK_DATE_JOIN }}
 GROUP BY
   yyyymmdd,
