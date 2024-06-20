@@ -27,7 +27,8 @@ JOIN
       COUNT(DISTINCT root_page) AS total
     FROM
       `httparchive.all.pages`
-    WHERE date = PARSE_DATE('%Y_%m_%d',  '${YYYY_MM_DD}') AND
+    WHERE
+      date = PARSE_DATE('%Y_%m_%d', '${YYYY_MM_DD}') AND
       rank = 1000
     GROUP BY
       date,
@@ -36,7 +37,7 @@ JOIN
 USING (date, client),
   UNNEST(getElements(JSON_EXTRACT(custom_metrics, '$.element_count'))) AS element
 WHERE
-  date = PARSE_DATE('%Y_%m_%d',  '${YYYY_MM_DD}')
+  date = PARSE_DATE('%Y_%m_%d', '${YYYY_MM_DD}')
 GROUP BY
   client,
   total,
