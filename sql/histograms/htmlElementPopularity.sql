@@ -29,7 +29,9 @@ JOIN
       `httparchive.all.pages`
     WHERE date = PARSE_DATE('%Y_%m_%d',  '${YYYY_MM_DD}') AND
       rank = 1000
-    GROUP BY date, client
+    GROUP BY
+      date,
+      client
   )
 USING (date, client),
   UNNEST(getElements(JSON_EXTRACT(custom_metrics, '$.element_count'))) AS element
