@@ -2,8 +2,7 @@
 CREATE TEMPORARY FUNCTION getElements(payload STRING)
 RETURNS ARRAY<STRING> LANGUAGE js AS '''
 try {
-  var $ = JSON.parse(payload);
-  var elements = JSON.parse($._element_count);
+  var elements = JSON.parse(payload);
   if (Array.isArray(elements) || typeof elements != 'object') return [];
   return Object.keys(elements);
 } catch (e) {
@@ -12,24 +11,36 @@ try {
 ''';
 
 SELECT
-  _TABLE_SUFFIX AS client,
+  client,
   element,
-  COUNT(DISTINCT url) AS pages,
+  COUNT(DISTINCT root_page) AS pages,
   total,
-  COUNT(DISTINCT url) / total AS pct,
-  ARRAY_TO_STRING(ARRAY_AGG(DISTINCT url LIMIT 5), ' ') AS sample_urls
+  COUNT(DISTINCT root_page) / total AS pct,
+  ARRAY_TO_STRING(ARRAY_AGG(DISTINCT page LIMIT 5), ' ') AS sample_urls
 FROM
-  `httparchive.pages.${YYYY_MM_DD}_*`
+  `httparchive.all.pages`
 JOIN
-  (SELECT _TABLE_SUFFIX, COUNT(0) AS total FROM `httparchive.pages.${YYYY_MM_DD}_*` GROUP BY _TABLE_SUFFIX)
-USING (_TABLE_SUFFIX),
-  UNNEST(getElements(payload)) AS element
+  (
+    SELECT
+      date,
+      client,
+      COUNT(DISTINCT root_page) AS total
+    FROM
+      `httparchive.all.pages`
+    WHERE date = PARSE_DATE('%Y_%m_%d',  '${YYYY_MM_DD}') AND
+      rank = 1000
+    GROUP BY date, client
+  )
+USING (date, client),
+  UNNEST(getElements(JSON_EXTRACT(custom_metrics, '$.element_count'))) AS element
+WHERE
+  date = PARSE_DATE('%Y_%m_%d',  '${YYYY_MM_DD}')
 GROUP BY
   client,
   total,
   element
 HAVING
-  COUNT(DISTINCT url) >= 10
+  COUNT(DISTINCT root_page) >= 10
 ORDER BY
   pages / total DESC,
   client
