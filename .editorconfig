@@ -8,7 +8,7 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[*.{html,md,js,css,sql}]
+[*.{html,md,js,json,css,sql}]
 indent_size = 2
 
 [*.py]
