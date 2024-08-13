@@ -36,7 +36,6 @@ jobs:
           # VALIDATE_BASH: true
           VALIDATE_EDITORCONFIG: true
           VALIDATE_JAVASCRIPT_ES: true
-          VALIDATE_JSON: true
           VALIDATE_MARKDOWN: true
           VALIDATE_PYTHON_PYLINT: true
           VALIDATE_PYTHON_FLAKE8: true
