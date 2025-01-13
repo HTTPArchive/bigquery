@@ -1,1 +1,1 @@
-'Drupal' in UNNEST(technologies.technology)
+'Drupal' IN UNNEST(technologies.technology)

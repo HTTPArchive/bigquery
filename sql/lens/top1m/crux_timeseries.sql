@@ -1,5 +1,5 @@
 SELECT
-  SUBSTR(page, 0, LENGTH(page) -1) AS origin,
+  SUBSTR(page, 0, LENGTH(page) - 1) AS origin,
   IF(client = 'mobile', 'phone', client) AS device,
   date
 FROM

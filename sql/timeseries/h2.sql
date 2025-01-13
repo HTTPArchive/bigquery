@@ -7,7 +7,7 @@ SELECT
 FROM
   `httparchive.crawl.requests` r
 INNER JOIN
-  `httparchive.crawl.pages` p
+  `httparchive.crawl.pages`
 USING (date, client, is_root_page, rank)
 WHERE
   is_root_page AND

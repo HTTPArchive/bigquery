@@ -1,1 +1,1 @@
-'Magento' in UNNEST(technologies.technology)
+'Magento' IN UNNEST(technologies.technology)

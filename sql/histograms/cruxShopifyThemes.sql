@@ -13,7 +13,7 @@ CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor F
 );
 
 -- Test CrUX data exists
-WITH crux_test AS (
+WITH crux_test AS ( -- noqa: ST03
   SELECT
     1
   FROM

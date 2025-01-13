@@ -1,5 +1,5 @@
 SELECT
-  SUBSTR(page, 0, LENGTH(page) -1) AS origin,
+  SUBSTR(page, 0, LENGTH(page) - 1) AS origin,
   IF(client = 'mobile', 'phone', client) AS device,
   date
 FROM
@@ -7,7 +7,7 @@ FROM
 WHERE
   date >= '2010-11-15' AND
   is_root_page AND
-  'Drupal' in UNNEST(technologies.technology)
+  'Drupal' IN UNNEST(technologies.technology)
 GROUP BY
   1,
   2,

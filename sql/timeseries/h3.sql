@@ -27,9 +27,10 @@ SELECT
 FROM
   `httparchive.crawl.requests` r
 LEFT OUTER JOIN
-  UNNEST (response_headers) AS resp ON (resp.name = 'alt-svc')
+  UNNEST(response_headers) AS resp
+ON (resp.name = 'alt-svc')
 INNER JOIN
-  `httparchive.crawl.pages` p
+  `httparchive.crawl.pages`
 USING (date, client, is_root_page, rank)
 WHERE
   date >= '2020-01-01' AND

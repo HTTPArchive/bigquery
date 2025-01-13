@@ -1,1 +1,1 @@
-'WordPress' in UNNEST(technologies.technology)
+'WordPress' IN UNNEST(technologies.technology)
