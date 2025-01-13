@@ -17,7 +17,7 @@ SELECT
   ROUND(
     SUM(
       IF(
-        LAX_STRING(summary.respHttpVersion) IN ('HTTP/3', 'h3', 'h3-29') OR
+        LAX_STRING(r.summary.respHttpVersion) IN ('HTTP/3', 'h3', 'h3-29') OR
         REGEXP_EXTRACT(REGEXP_EXTRACT(resp.value, r'(.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3=%' OR
         REGEXP_EXTRACT(REGEXP_EXTRACT(resp.value, r'(.*)'), r'(.*?)(?:, [^ ]* = .*)?$') LIKE '%h3-29=%',
         1, 0
@@ -25,9 +25,12 @@ SELECT
     ) * 100 / COUNT(0), 2
   ) AS percent
 FROM
-  `httparchive.crawl.requests`
+  `httparchive.crawl.requests` r
 LEFT OUTER JOIN
   UNNEST (response_headers) AS resp ON (resp.name = 'alt-svc')
+INNER JOIN
+  `httparchive.crawl.pages` p
+USING (date, client, is_root_page, rank)
 WHERE
   date >= '2020-01-01' AND
   is_root_page

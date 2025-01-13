@@ -12,17 +12,21 @@ FROM
 JOIN
   (
     SELECT
-      _TABLE_SUFFIX AS _TABLE_SUFFIX,
+      page,
+      client AS page_client,
+      date,
       url AS tech_url
     FROM
-      `httparchive.technologies.*`
+      `httparchive.crawl.pages`
     WHERE
+      date >= '2016-11-15' AND
       app = 'WordPress'
     GROUP BY
-      _TABLE_SUFFIX,
-      tech_url
+      client,
+      date,
+      page
   )
-ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || '_' || client)
+ON (url = page AND yyyymmdd = date AND client = page_client)
 JOIN (
   SELECT
     yyyymmdd,
@@ -32,17 +36,21 @@ JOIN (
   JOIN
     (
       SELECT
-        _TABLE_SUFFIX AS _TABLE_SUFFIX,
+        page,
+        client AS page_client,
+        date,
         url AS tech_url
       FROM
-        `httparchive.technologies.*`
+        `httparchive.crawl.pages`
       WHERE
+        date >= '2017-01-01' AND
         app = 'WordPress'
       GROUP BY
-        _TABLE_SUFFIX,
-        tech_url
+        client,
+        date,
+        page
     )
-  ON (url = tech_url AND _TABLE_SUFFIX = FORMAT_DATE('%Y_%m_%d', yyyymmdd) || '_' || client)
+  ON (url = page AND yyyymmdd = date AND client = page_client)
   WHERE
     1 = 1
     {{ BLINK_DATE_JOIN }}

@@ -344,24 +344,37 @@ else
           fi
         else
 
-          lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
-          if [[ $metric == crux* ]]; then
+          if [[ $metric != crux* ]]; then
+            lens_clause="$(cat sql/lens/$LENS/timeseries.sql)"
+            lens_clause_and="$(cat sql/lens/$LENS/timeseries.sql) AND"
+            lens_join=""
+          else
             echo "CrUX query so using alternative lens join"
-            lens_join="JOIN ($(cat sql/lens/$LENS/timeseries.sql | tr '\n' ' ')) ON (origin || '\/' = url AND REGEXP_REPLACE(CAST(yyyymm AS STRING), '(\\\\\\\\d{4})(\\\\\\\\d{2})', '\\\\\\\\1_\\\\\\\\2_01') || '_' || IF(device = 'phone', 'mobile', device) = _TABLE_SUFFIX)"
+            lens_clause=""
+            lens_clause_and=""
+            lens_join="JOIN ($(cat sql/lens/$LENS/crux_timeseries.sql | tr '\n' ' ')) USING (origin, date, device)"
           fi
 
           if [[ -n "${date_join}" ]]; then
             if [[ $(grep -i "WHERE" $query) ]]; then
               # If WHERE clause already exists then add to it, before GROUP BY
-              sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND/" $query \
+              sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and $date_join AND/" $query \
                 | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
             else
               # If WHERE clause does not exists then add it, before GROUP BY
-              sql=$(sed -e "s/\(GROUP BY\)/WHERE $date_join \1/" $query \
+              sql=$(sed -e "s/\(GROUP BY\)/WHERE $lens_clause_and $date_join \1/" $query \
                 | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
             fi
           else
-            sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query)
+            if [[ $(grep -i "WHERE" $query) ]]; then
+              # If WHERE clause already exists then add to it, before GROUP BY
+              sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and /" $query \
+                | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
+            else
+              # If WHERE clause does not exists then add it, before GROUP BY
+              sql=$(sed -e "s/\(GROUP BY\)/WHERE $lens_clause \1/" $query \
+                | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
+            fi
           fi
         fi
 
