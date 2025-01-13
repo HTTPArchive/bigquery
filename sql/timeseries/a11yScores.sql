@@ -1,11 +1,10 @@
 #standardSQL
 # Lighthouse changed format of scores in v3.0.0 released in July 2018 so handle old with a UDF
-CREATE TEMPORARY FUNCTION getA11yScore(reportCategories STRING)
+CREATE TEMPORARY FUNCTION getA11yScore(reportCategories JSON)
 RETURNS FLOAT64 DETERMINISTIC
 LANGUAGE js AS """
-  $=JSON.parse(reportCategories);
-  if($) {
-    return $.find(i => i.name === 'Accessibility').score;
+  if(reportCategories) {
+    return reportCategories.find(i => i.name === 'Accessibility').score;
   }
 """;
 
@@ -20,13 +19,16 @@ SELECT
   ROUND(APPROX_QUANTILES(score, 1000)[OFFSET(900)], 2) AS p90
 FROM (
   SELECT
-    SUBSTR(_TABLE_SUFFIX, 0, 10) AS date,
-    IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
-    IFNULL(CAST(JSON_EXTRACT(report, '$.categories.accessibility.score') AS FLOAT64) * 100, getA11yScore(JSON_EXTRACT(report, '$.reportCategories'))) AS score
+    format_timestamp('%Y_%m_%d', date) AS date,
+    client,
+    IFNULL(LAX_FLOAT64(lighthouse.categories.accessibility.score) * 100, getA11yScore(lighthouse.reportCategories)) AS score
   FROM
-    `httparchive.lighthouse.*`
+    `httparchive.crawl.pages`
   WHERE
-    report IS NOT NULL
+    lighthouse IS NOT NULL AND
+    TO_JSON_STRING(lighthouse) != '{}' AND
+    date >= '2017-06-01' AND
+    is_root_page
 )
 GROUP BY
   date,

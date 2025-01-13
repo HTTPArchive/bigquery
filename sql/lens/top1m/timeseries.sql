@@ -1,11 +1,14 @@
 SELECT
   url,
-  _TABLE_SUFFIX AS _TABLE_SUFFIX
+  client,
+  date
 FROM
-  `httparchive.summary_pages.*`
+  `httparchive.crawl.pages`
 WHERE
+  date >= '2021-05-01' AND
   rank <= 1000000 AND
-  _TABLE_SUFFIX >= '2021_05_01'
+  is_root_page
 GROUP BY
   1,
-  2
+  2,
+  3

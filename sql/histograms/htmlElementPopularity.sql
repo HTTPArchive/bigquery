@@ -18,7 +18,7 @@ SELECT
   COUNT(DISTINCT root_page) / total AS pct,
   ARRAY_TO_STRING(ARRAY_AGG(DISTINCT page LIMIT 5), ' ') AS sample_urls
 FROM
-  `httparchive.all.pages`
+  `httparchive.crawl.pages`
 JOIN
   (
     SELECT
@@ -26,18 +26,17 @@ JOIN
       client,
       COUNT(DISTINCT root_page) AS total
     FROM
-      `httparchive.all.pages`
+      `httparchive.crawl.pages`
     WHERE
-      date = PARSE_DATE('%Y_%m_%d', '${YYYY_MM_DD}') AND
-      rank = 1000
+      date = '${YYYY-MM-DD}'
     GROUP BY
       date,
       client
   )
 USING (date, client),
-  UNNEST(getElements(JSON_EXTRACT(custom_metrics, '$.element_count'))) AS element
+  UNNEST(getElements(TO_JSON_STRING(custom_metrics.element_count))) AS element
 WHERE
-  date = PARSE_DATE('%Y_%m_%d', '${YYYY_MM_DD}')
+  date = '${YYYY-MM-DD}'
 GROUP BY
   client,
   total,

@@ -10,9 +10,12 @@ FROM (
     SELECT
       _TABLE_SUFFIX AS client,
       COUNT(0) AS volume,
-      reqImg AS bin
+      FLOAT64(summary.reqImg) AS bin
     FROM
-      `httparchive.summary_pages.${YYYY_MM_DD}_*`
+      `httparchive.crawl.pages`
+    WHERE
+      date = '${YYYY-MM-DD}' AND
+      is_root_page
     GROUP BY
       bin,
       client

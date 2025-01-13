@@ -1,10 +1,11 @@
 SELECT
-  url,
-  _TABLE_SUFFIX AS _TABLE_SUFFIX
+  page,
+  client
 FROM
-  `httparchive.technologies.${YYYY_MM_DD}_*`
+  `httparchive.crawl.pages`
 WHERE
-  app = 'WordPress'
+  date = '${YYYY-MM-DD}' AND
+  'WordPress' in UNNEST(technologies.technology)
 GROUP BY
   1,
   2

@@ -8,11 +8,14 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      _TABLE_SUFFIX AS client,
+      client,
       COUNT(0) AS volume,
-      CAST(CAST(JSON_EXTRACT(payload, "$['_cpu.EvaluateScript']") AS FLOAT64) / 20 AS INT64) * 20 AS bin
+      CAST(FLOAT64(payload['_cpu.EvaluateScript']) / 20 AS INT64) * 20 AS bin
     FROM
-      `httparchive.requests.${YYYY_MM_DD}_*`
+      `httparchive.crawl.requests`
+    WHERE
+      date = '${YYYY-MM-DD}' AND
+      is_root_page
     GROUP BY
       bin,
       client

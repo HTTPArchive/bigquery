@@ -1,11 +1,14 @@
 #standardSQL
 SELECT
-  SUBSTR(_TABLE_SUFFIX, 0, 10) AS date,
-  UNIX_DATE(CAST(REPLACE(SUBSTR(_TABLE_SUFFIX, 0, 10), '_', '-') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
-  IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
+  date,
+  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
+  client,
   COUNT(0) AS urls
 FROM
-  `httparchive.summary_pages.*`
+  `httparchive.crawl.pages`
+WHERE
+  date >= '2010-11-15' AND
+  is_root_page
 GROUP BY
   date,
   timestamp,

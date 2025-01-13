@@ -1,13 +1,16 @@
 #standardSQL
 SELECT
-  SUBSTR(_TABLE_SUFFIX, 0, 10) AS date,
-  UNIX_DATE(CAST(REPLACE(SUBSTR(_TABLE_SUFFIX, 0, 10), '_', '-') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
-  IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
-  ROUND(COUNT(DISTINCT IF(LOWER(attr) = '"lazy"', url, NULL)) * 100 / COUNT(DISTINCT url), 2) AS percent
+  FORMAT_TIMESTAMP('%Y_%m_%d', date) AS date,
+  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
+  client,
+  ROUND(COUNT(DISTINCT IF(LOWER(LAX_STRING(attr)) = 'lazy', page, NULL)) * 100 / COUNT(DISTINCT page), 2) AS percent
 FROM
-  `httparchive.pages.*`
+  `httparchive.crawl.pages`
 LEFT JOIN
-  UNNEST(JSON_EXTRACT_ARRAY(JSON_EXTRACT_SCALAR(payload, "$['_img-loading-attr']"), '$')) AS attr
+  UNNEST(JSON_EXTRACT_ARRAY(custom_metrics.other['img-loading-attr'])) AS attr
+WHERE
+  is_root_page AND
+  date > '2016-01-01'
 GROUP BY
   date,
   timestamp,

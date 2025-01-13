@@ -8,13 +8,15 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      _TABLE_SUFFIX AS client,
+      client,
       COUNT(0) AS volume,
-      _connections AS bin
+      INT64(summary._connections) AS bin
     FROM
-      `httparchive.summary_pages.${YYYY_MM_DD}_*`
+      `httparchive.crawl.pages`
     WHERE
-      _connections > 0
+      date = '${YYYY-MM-DD}' AND
+      is_root_page AND
+      INT64(summary._connections) > 0
     GROUP BY
       bin,
       client

@@ -20,6 +20,8 @@ FROM (
     ) AS FLOAT64) / 1000 AS value
   FROM
     `httparchive.lighthouse.*`
+  WHERE
+    _TABLE_SUFFIX < '2022_03_01'
 )
 GROUP BY
   date,

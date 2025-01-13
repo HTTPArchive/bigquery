@@ -13,8 +13,8 @@ const fs = require('fs');
 
 const date = process.argv[2];
 if (!date) {
-  console.error(`You must pass a YYYY_MM_DD-formatted date as input. For example:
-  sql/addDate.js 2017_09_01`);
+  console.error(`You must pass a YYYY-MM-DD-formatted date as input. For example:
+  sql/addDate.js 2017-09-01`);
   process.exit(1);
 }
 

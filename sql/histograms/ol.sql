@@ -8,13 +8,15 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      _TABLE_SUFFIX AS client,
+      client,
       COUNT(0) AS volume,
-      FLOOR(onLoad / 1000) AS bin
+      FLOOR(FLOAT64(summary.onLoad) / 1000) AS bin
     FROM
-      `httparchive.summary_pages.${YYYY_MM_DD}_*`
+      `httparchive.crawl.pages`
     WHERE
-      onLoad > 0
+      date = '${YYYY-MM-DD}' AND
+      is_root_page AND
+      FLOAT64(summary.onLoad) > 0
     GROUP BY
       bin,
       client

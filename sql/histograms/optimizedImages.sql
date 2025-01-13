@@ -6,18 +6,25 @@ FROM (
   SELECT
     *,
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
-  FROM (
-    SELECT
-      _TABLE_SUFFIX AS client,
-      COUNT(0) AS volume,
-      CAST(FLOOR(IFNULL(CAST(JSON_EXTRACT(report, '$.audits.uses-optimized-images.details.overallSavingsBytes') AS INT64), CAST(JSON_EXTRACT(report, '$.audits.uses-optimized-images.extendedInfo.value.wastedKb') AS INT64) * 1024) / 10240) * 10 AS INT64) AS bin
-    FROM
-      `httparchive.lighthouse.${YYYY_MM_DD}_*`
-    GROUP BY
-      bin,
-      client
-    HAVING
-      bin IS NOT NULL
+ FROM (
+  SELECT
+    client,
+    COUNT(0) AS volume,
+    CAST(FLOOR(IFNULL(
+      INT64(lighthouse.audits['uses-optimized-images'].details.overallSavingsBytes),
+      INT64(lighthouse.audits['uses-optimized-images'].extendedInfo.value.wastedKb)
+    * 1024) / 10240) * 10 AS INT64) AS bin
+  FROM
+    `httparchive.crawl.pages`
+  WHERE
+    date >= '2022-03-01' AND
+    date = '${YYYY-MM-DD}' AND
+    is_root_page
+  GROUP BY
+    bin,
+    client
+  HAVING
+    bin IS NOT NULL
   )
 )
 ORDER BY

@@ -4,9 +4,9 @@
 #
 # Usage:
 #
-#   $ sql/delete_date_from_reports.sh -d YYYY_MM_DD
-#   $ sql/delete_date_from_reports.sh -d YYYY_MM_DD -l top1k
-#   $ sql/delete_date_from_reports.sh -d YYYY_MM_DD -l top1k -r "*crux*"
+#   $ sql/delete_date_from_reports.sh -d YYYY-MM-DD
+#   $ sql/delete_date_from_reports.sh -d YYYY-MM-DD -l top1k
+#   $ sql/delete_date_from_reports.sh -d YYYY-MM-DD -l top1k -r "*crux*"
 #
 # Flags:
 #
@@ -26,7 +26,7 @@ NO_CHANGES=0
 while getopts ":nvd:l:r:" opt; do
   case "${opt}" in
     d)
-      YYYY_MM_DD=${OPTARG}
+      YYYY-MM-DD=${OPTARG}
       ;;
     v)
       VERBOSE=1
@@ -43,12 +43,12 @@ while getopts ":nvd:l:r:" opt; do
   esac
 done
 
-if [[ "${YYYY_MM_DD}" == "" ]]; then
-  echo "Usage $0 -d 2021_12_01"
+if [[ "${YYYY-MM-DD}" == "" ]]; then
+  echo "Usage $0 -d 2021-12-01"
   exit 1
 fi
 
-echo "${YYYY_MM_DD}"
+echo "${YYYY-MM-DD}"
 
 # Run all timeseries queries.
 for query in sql/timeseries/$REPORTS.sql; do
@@ -96,7 +96,7 @@ for query in sql/timeseries/$REPORTS.sql; do
         echo "${current_contents}\n"
       fi
 
-      new_contents=$(echo "$current_contents" | jq -c --indent 1 --arg date "${YYYY_MM_DD}" '.[] | select(.date!=$date)' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
+      new_contents=$(echo "$current_contents" | jq -c --indent 1 --arg date "${YYYY-MM-DD}" '.[] | select(.date!=$date)' | tr -d '\n' | sed 's/^/[ /' | sed 's/}$/ } ]\n/' | sed 's/}{/ }, {/g')
 
       if [ ${VERBOSE} -eq 1 ]; then
         echo "New JSON:"
