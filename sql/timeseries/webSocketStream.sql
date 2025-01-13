@@ -11,7 +11,7 @@ LEFT OUTER JOIN
   UNNEST(features) AS feat
 ON (feat.id = '3018' OR feat.feature = 'WebSocketStreamConstructor')
 WHERE
-  date = '2024-11-01' AND
+  date >= '2016-11-15' AND
   is_root_page
 GROUP BY
   date,
