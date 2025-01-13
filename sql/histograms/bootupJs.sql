@@ -3,6 +3,10 @@ SELECT
   *,
   SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
 FROM (
+  SELECT
+    *,
+    volume / SUM(volume) OVER (PARTITION BY client) AS pdf
+  FROM (
     SELECT
       client,
       COUNT(0) AS volume,

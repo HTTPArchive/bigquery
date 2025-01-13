@@ -37,7 +37,7 @@ while getopts ":ftvh:l:r:" opt; do
       YYYY_MM_DD=${OPTARG}
       dateParts=(`echo ${OPTARG} | tr "_" "\\n"`)
       YYYYMM=${dateParts[0]}${dateParts[1]}
-      DATE=${dateParts[0]}-${dateParts[1]-${dateParts[2]}
+      DATE=${dateParts[0]}-${dateParts[1]}-${dateParts[2]}
       ;;
     t)
       GENERATE_TIMESERIES=1
@@ -68,6 +68,7 @@ fi
 # Tables representing desktop/mobile and HAR/CSV data sources must exist.
 DATED_TABLES_READY=0
 if [ -n "$YYYY_MM_DD" ]; then
+  echo "Checking if tables are ready for ${DATE}..."
   DESKTOP_ROOT_PAGES_EXIST=$(bq query --nouse_legacy_sql --format csv --headless -q "SELECT true FROM httparchive.crawl.pages WHERE date = '${DATE}' AND client = 'desktop' AND is_root_page LIMIT 1" | tail -1)
   DESKTOP_NON_ROOT_PAGES_EXIST=$(bq query --nouse_legacy_sql --format csv --headless -q "SELECT true FROM httparchive.crawl.pages WHERE date = '${DATE}' AND client = 'desktop' AND is_root_page LIMIT 1" | tail -1)
   MOBILE_ROOT_PAGES_EXIST=$(bq query --nouse_legacy_sql --format csv --headless -q "SELECT true FROM httparchive.crawl.pages WHERE date = '${DATE}' AND client = 'mobile' AND NOT is_root_page LIMIT 1" | tail -1)
@@ -76,6 +77,7 @@ if [ -n "$YYYY_MM_DD" ]; then
   DESKTOP_NON_ROOT_REQUESTS_EXIST=$(bq query --nouse_legacy_sql --format csv --headless -q "SELECT true FROM httparchive.crawl.requests WHERE date = '${DATE}' AND client = 'desktop' AND is_root_page LIMIT 1" | tail -1)
   MOBILE_ROOT_REQUESTS_EXIST=$(bq query --nouse_legacy_sql --format csv --headless -q "SELECT true FROM httparchive.crawl.requests WHERE date = '${DATE}' AND client = 'mobile' AND NOT is_root_page LIMIT 1" | tail -1)
   MOBILE_NON_ROOT_REQUESTS_EXIST=$(bq query --nouse_legacy_sql --format csv --headless -q "SELECT true FROM httparchive.crawl.requests WHERE date = '${DATE}' AND client = 'mobile' AND NOT is_root_page LIMIT 1" | tail -1)
+  echo "Finished checking if dates are ready"
   if [[ "$DESKTOP_ROOT_PAGES_EXIST" == true && "$DESKTOP_NON_ROOT_PAGES_EXIST" == true && "$MOBILE_ROOT_PAGES_EXIST" == true && "$MOBILE_NON_ROOT_PAGES_EXIST" == true && "$DESKTOP_ROOT_REQUESTS_EXIST" == true && "$DESKTOP_NON_ROOT_REQUESTS_EXIST" == true && "$MOBILE_ROOT_REQUESTS_EXIST" == true && "$MOBILE_NON_ROOT_REQUESTS_EXIST" == true ]]; then
     DATED_TABLES_READY=1
   fi
@@ -86,9 +88,13 @@ if [ $GENERATE_HISTOGRAM -ne 0 -a $DATED_TABLES_READY -ne 1 ]; then
   # List table data for debugging
   echo $(date)
   echo "Desktop root pages ready: ${DESKTOP_ROOT_PAGES_EXIST}"
-  echo "Desktop non-oot pages ready: ${DESKTOP_NON_ROOT_PAGES_EXIST}"
+  echo "Desktop non-root pages ready: ${DESKTOP_NON_ROOT_PAGES_EXIST}"
   echo "Mobile root pages ready: ${MOBILE_ROOT_PAGES_EXIST}"
   echo "Mobile non-root pages ready: ${MOBILE_NON_ROOT_PAGES_EXIST}"
+  echo "Desktop root requests ready: ${DESKTOP_ROOT_REQUESTS_EXIST}"
+  echo "Desktop non-root requests ready: ${DESKTOP_NON_ROOT_REQUESTS_EXIST}"
+  echo "Mobile root requests ready: ${MOBILE_ROOT_REQUESTS_EXIST}"
+  echo "Mobile non-root requests ready: ${MOBILE_NON_ROOT_REQUESTS_EXIST}"
   exit 1
 fi
 

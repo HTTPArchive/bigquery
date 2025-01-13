@@ -8,7 +8,7 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      _TABLE_SUFFIX AS client,
+      client,
       COUNT(0) AS volume,
       FLOAT64(summary.reqHtml) AS bin
     FROM

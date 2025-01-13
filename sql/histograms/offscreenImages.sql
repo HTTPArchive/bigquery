@@ -10,7 +10,10 @@ FROM (
     SELECT
       client,
       COUNT(0) AS volume,
-      CAST(FLOOR(IFNULL(CAST(JSON_EXTRACT(lighthouse, '$.audits.offscreen-images.details.overallSavingsBytes') AS INT64), CAST(JSON_EXTRACT(lighthouse, '$.audits.offscreen-images.extendedInfo.value.wastedKb') AS INT64) * 1024) / 10240) * 10 AS INT64) AS bin
+      CAST(FLOOR(IFNULL(
+        INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes),
+        INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb)
+      * 1024) / 10240) * 10 AS INT64) AS bin
     FROM
       `httparchive.crawl.pages`
     WHERE
