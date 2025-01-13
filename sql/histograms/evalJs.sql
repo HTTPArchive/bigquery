@@ -13,6 +13,9 @@ FROM (
       CAST(FLOAT64(payload['_cpu.EvaluateScript']) / 20 AS INT64) * 20 AS bin
     FROM
       `httparchive.crawl.requests`
+    INNER JOIN
+      `httparchive.crawl.pages`
+    USING (date, client, is_root_page, rank, page)
     WHERE
       date = '${YYYY-MM-DD}' AND
       is_root_page

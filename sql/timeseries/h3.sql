@@ -31,7 +31,7 @@ LEFT OUTER JOIN
 ON (resp.name = 'alt-svc')
 INNER JOIN
   `httparchive.crawl.pages`
-USING (date, client, is_root_page, rank)
+USING (date, client, is_root_page, rank, page)
 WHERE
   date >= '2020-01-01' AND
   is_root_page
