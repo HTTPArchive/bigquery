@@ -254,21 +254,7 @@ else
 
           # Only run if new dates
           if [[ -z "${YYYY_MM_DD}" || "${max_date}" < "${YYYY_MM_DD}" ]]; then
-            if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
-              date_join="yyyymmdd > REPLACE(\"$max_date\",\"_\",\"\")"
-              if [[ -n "$YYYY_MM_DD" ]]; then
-                # If a date is given, then only run up until then (in case next month is mid-run as do not wanna get just desktop data)
-                date_join="${date_join} AND yyyymmdd <= REPLACE(\"$YYYY_MM_DD\",\"_\",\"\")"
-              fi
-            elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
-              date_join="yyyymmdd > CAST(REPLACE(\"$max_date\",\"_\",\"-\") AS DATE)"
-               # Skip 2022_05_12 tables
-              date_join="${date_join} AND yyyymmdd != \"2022-05-12\""
-              if [[ -n "$YYYY_MM_DD" ]]; then
-                # If a date is given, then only run up until then (in case next month is mid run as do not wanna get just desktop data)
-                date_join="${date_join} AND yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
-              fi
-            elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
+            if [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
               date_join="date > CAST(REPLACE(\"$max_date\",\"_\",\"-\") AS DATE)"
               # Skip 2022_05_12 tables
               date_join="${date_join} AND date != \"2022-05-12\""
@@ -287,13 +273,7 @@ else
 
         elif [[ -n "$YYYY_MM_DD" ]]; then
           # Even if doing a force run we only wanna run up until date given in case next month is mid-run as do not wanna get just desktop data
-          if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
-            date_join="yyyymmdd <= \"$DATE\""
-          elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
-            date_join="yyyymmdd <= \"$DATE\""
-            # Skip 2022_05_12 tables
-            date_join="${date_join} AND yyyymmdd != \"2022-05-12\""
-          elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
+          if [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
             # If a date is given, then only run up until then (in case next month is mid run as do not wanna get just desktop data)
             date_join="date <= \"$DATE\""
             # Skip 2022_05_12 tables
@@ -304,13 +284,7 @@ else
         fi
       elif [[ -n "$YYYY_MM_DD" ]]; then
         # Even if the file does not exist we only wanna run up until date given in case next month is mid-run as do not wanna get just desktop data
-        if [[ $(grep "httparchive.blink_features.usage" $query) && $LENS == "" ]]; then # blink needs a special join, different for lenses
-          date_join="yyyymmdd <= \"$DATE\""
-        elif [[ $(grep "httparchive.blink_features.usage" $query) && $LENS != "" ]]; then # blink needs a special join, different for lenses
-          date_join="yyyymmdd <= \"$DATE\""
-          # Skip 2022_05_12 tables
-          date_join="${date_join} AND yyyymmdd != \"2022-05-12\""
-        elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
+        if [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
           date_join="date <= \"$DATE\""
           # Skip 2022_05_12 tables
           date_join="${date_join} AND date != \"2022-05-12\""
@@ -324,57 +298,36 @@ else
 
       if [[ $LENS != "" ]]; then
 
-        if [[ $(grep "httparchive.blink_features.usage" $query) ]]; then
-          # blink_features.usage need to be replace by blink_features.features for lenses
-          if [[ -f sql/lens/$LENS/blink_timeseries.sql ]]; then
-            echo "Using alternative blink_timeseries lens join"
-            lens_join="$(cat sql/lens/$LENS/blink_timeseries.sql | tr '\n' ' ')"
+        if [[ $metric != crux* ]]; then
+          lens_clause="$(cat sql/lens/$LENS/timeseries.sql)"
+          lens_clause_and="$(cat sql/lens/$LENS/timeseries.sql) AND"
+          lens_join=""
+        else
+          echo "CrUX query so using alternative lens join"
+          lens_clause=""
+          lens_clause_and=""
+          lens_join="JOIN ($(cat sql/lens/$LENS/crux_timeseries.sql | tr '\n' ' ')) USING (origin, date, device)"
+        fi
 
-            # For blink features for lenses we have a BLINK_DATE_JOIN variable to replace
-            if [[ -z "${date_join}" ]]; then
-              sql=$(sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-              | sed -e "s/ {{ BLINK_DATE_JOIN }}//g")
-            else
-              sql=$( sed -e "s/\`httparchive.blink_features.usage\`/($lens_join)/" $query \
-                | sed -e "s/{{ BLINK_DATE_JOIN }}/AND $date_join/g")
-            fi
+        if [[ -n "${date_join}" ]]; then
+          if [[ $(grep -i "WHERE" $query) ]]; then
+            # If WHERE clause already exists then add to it, before GROUP BY
+            sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and $date_join AND/" $query \
+              | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
           else
-            echo "blink_features.usage queries not supported for this lens so skipping lens"
-            continue
+            # If WHERE clause does not exists then add it, before GROUP BY
+            sql=$(sed -e "s/\(GROUP BY\)/WHERE $lens_clause_and $date_join \1/" $query \
+              | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
           fi
         else
-
-          if [[ $metric != crux* ]]; then
-            lens_clause="$(cat sql/lens/$LENS/timeseries.sql)"
-            lens_clause_and="$(cat sql/lens/$LENS/timeseries.sql) AND"
-            lens_join=""
+          if [[ $(grep -i "WHERE" $query) ]]; then
+            # If WHERE clause already exists then add to it, before GROUP BY
+            sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and /" $query \
+              | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
           else
-            echo "CrUX query so using alternative lens join"
-            lens_clause=""
-            lens_clause_and=""
-            lens_join="JOIN ($(cat sql/lens/$LENS/crux_timeseries.sql | tr '\n' ' ')) USING (origin, date, device)"
-          fi
-
-          if [[ -n "${date_join}" ]]; then
-            if [[ $(grep -i "WHERE" $query) ]]; then
-              # If WHERE clause already exists then add to it, before GROUP BY
-              sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and $date_join AND/" $query \
-                | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
-            else
-              # If WHERE clause does not exists then add it, before GROUP BY
-              sql=$(sed -e "s/\(GROUP BY\)/WHERE $lens_clause_and $date_join \1/" $query \
-                | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
-            fi
-          else
-            if [[ $(grep -i "WHERE" $query) ]]; then
-              # If WHERE clause already exists then add to it, before GROUP BY
-              sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and /" $query \
-                | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
-            else
-              # If WHERE clause does not exists then add it, before GROUP BY
-              sql=$(sed -e "s/\(GROUP BY\)/WHERE $lens_clause \1/" $query \
-                | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
-            fi
+            # If WHERE clause does not exists then add it, before GROUP BY
+            sql=$(sed -e "s/\(GROUP BY\)/WHERE $lens_clause \1/" $query \
+              | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
           fi
         fi
 
