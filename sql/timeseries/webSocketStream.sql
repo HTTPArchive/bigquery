@@ -21,4 +21,3 @@ ORDER BY
   date DESC,
   client,
   num_urls DESC
-
