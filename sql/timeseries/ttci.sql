@@ -16,7 +16,7 @@ FROM (
       FLOAT64(lighthouse.audits.interactive.numericValue),
       IFNULL(
         FLOAT64(lighthouse.audits.interactive.rawValue),
-        FLOAT64(lighthouse.audits['consistently-interactive].rawValue)
+        FLOAT64(lighthouse.audits['consistently-interactive'].rawValue)
       )
     ) / 1000 AS value
   FROM
