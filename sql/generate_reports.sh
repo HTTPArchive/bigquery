@@ -4,7 +4,7 @@
 #
 # Usage:
 #
-#   $ sql/generateReports.sh -t -h YYYY-MM-DD
+#   $ sql/generateReports.sh -t -h YYYY_MM_DD
 #
 # Flags:
 #
