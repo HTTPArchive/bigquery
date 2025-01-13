@@ -151,7 +151,7 @@ else
       # Replace the date template in the query.
       if [[ $LENS != "" ]]; then
         echo -e "Generating ${metric} report for $LENS"
-        lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (url, _TABLE_SUFFIX)"
+        lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (page, client)"
         if [[ $metric == crux* ]]; then
           if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
             echo "Using alternative crux lens join"
@@ -269,12 +269,12 @@ else
                 date_join="${date_join} AND yyyymmdd <= CAST(REPLACE(\"$YYYY_MM_DD\",\"_\",\"-\") AS DATE)"
               fi
             elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
-              date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) > \"$max_date\""
+              date_join="date > CAST(REPLACE(\"$max_date\",\"_\",\"-\") AS DATE)"
               # Skip 2022_05_12 tables
-              date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) != \"2022_05_12\""
+              date_join="${date_join} AND date != \"2022-05-12\""
               if [[ -n "$YYYY_MM_DD" ]]; then
                 # If a date is given, then only run up until then (in case next month is mid run as do not wanna get just desktop data)
-                date_join="${date_join} AND SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
+                date_join="${date_join} AND date <= \"$DATE\""
               fi
             fi
 
@@ -311,7 +311,7 @@ else
           # Skip 2022_05_12 tables
           date_join="${date_join} AND yyyymmdd != \"2022-05-12\""
         elif [[ $metric != crux* ]]; then # CrUX is quick and join is more compilicated so just do a full run of that
-          date_join="SUBSTR(_TABLE_SUFFIX, 0, 10) <= \"$YYYY_MM_DD\""
+          date_join="date <= \"$DATE\""
           # Skip 2022_05_12 tables
           date_join="${date_join} AND date != \"2022-05-12\""
         fi

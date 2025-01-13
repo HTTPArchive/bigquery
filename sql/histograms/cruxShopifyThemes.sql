@@ -12,8 +12,16 @@ CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor F
   good + needs_improvement + poor > 0
 );
 
+-- Test CrUX data exists
+WITH crux_test AS (
+  SELECT
+    1
+  FROM
+    `chrome-ux-report.all.${YYYYMM}`
+),
+
 -- All Shopify shops in HTTPArchive
-WITH archive_pages AS (
+archive_pages AS (
   SELECT
     client,
     page AS url,

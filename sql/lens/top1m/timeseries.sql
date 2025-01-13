@@ -1,14 +1,16 @@
 SELECT
-  url,
+  page,
   client,
-  date
+  date,
+  is_root_page
 FROM
   `httparchive.crawl.pages`
 WHERE
   date >= '2021-05-01' AND
-  rank <= 1000000 AND
-  is_root_page
+  is_root_page AND
+  rank <= 1000000
 GROUP BY
   1,
   2,
-  3
+  3,
+  4
