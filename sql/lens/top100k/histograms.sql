@@ -1,5 +1,5 @@
 SELECT
-  url,
+  page,
   client
 FROM
   `httparchive.crawl.pages`
