@@ -10,9 +10,9 @@ FROM (
     SELECT
       client,
       COUNT(0) AS volume,
-      CAST(FLOAT64(payload['_cpu.EvaluateScript']) / 20 AS INT64) * 20 AS bin
+      CAST(FLOAT64(r.payload['_cpu.EvaluateScript']) / 20 AS INT64) * 20 AS bin
     FROM
-      `httparchive.crawl.requests`
+      `httparchive.crawl.requests` r
     INNER JOIN
       `httparchive.crawl.pages`
     USING (date, client, is_root_page, rank, page)
