@@ -160,7 +160,7 @@ else
           lens_clause_and=""
           if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
             echo "Using alternative crux lens join"
-            lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | sed -e "s/--noqa: disable=PRS//g" | tr '\n' ' ')"
+            lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | tr '\n' ' ')"
           else
             echo "CrUX queries do not support histograms for this lens so skipping"
             continue
@@ -172,7 +172,7 @@ else
         else
 
           if [[ $(grep -i "WHERE" $query) ]]; then
-            # If WHERE clause already exists then add to it, before GROUP BY
+            # If WHERE clause already exists then add to it
             sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and /" $query \
               | sed -e "s/\${YYYY-MM-DD}/$DATE/g" \
               | sed -e "s/\${YYYYMM}/$YYYYMM/g")
@@ -320,12 +320,12 @@ else
           echo "CrUX query so using alternative lens join"
           lens_clause=""
           lens_clause_and=""
-          lens_join="JOIN ($(cat sql/lens/$LENS/crux_timeseries.sql | tr '\n' ' ')) USING (origin, date, device)"
+          lens_join="$(cat sql/lens/$LENS/crux_timeseries.sql | tr '\n' ' ')"
         fi
 
         if [[ -n "${date_join}" ]]; then
           if [[ $(grep -i "WHERE" $query) ]]; then
-            # If WHERE clause already exists then add to it, before GROUP BY
+            # If WHERE clause already exists then add to it
             sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and $date_join AND/" $query \
               | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
           else
@@ -335,7 +335,7 @@ else
           fi
         else
           if [[ $(grep -i "WHERE" $query) ]]; then
-            # If WHERE clause already exists then add to it, before GROUP BY
+            # If WHERE clause already exists then add to it
             sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and /" $query \
               | sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/")
           else
@@ -348,7 +348,7 @@ else
       else
         if [[ -n "${date_join}" ]]; then
           if [[ $(grep -i "WHERE" $query) ]]; then
-            # If WHERE clause already exists then add to it, before GROUP BY
+            # If WHERE clause already exists then add to it
             sql=$(sed -e "s/\(WHERE\)/\1 $date_join AND /" $query)
           else
             # If WHERE clause does not exists then add it, before GROUP BY

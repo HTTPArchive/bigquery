@@ -1,5 +1,4 @@
-INNER JOIN
-  (
+INNER JOIN (
   SELECT
     page,
     client
@@ -11,5 +10,5 @@ INNER JOIN
   GROUP BY
     1,
     2
-  )
+)
 ON (SUBSTR(page, 0, LENGTH(page) - 1) = origin AND form_factor.name = IF(client = 'desktop', 'desktop', 'phone'))
