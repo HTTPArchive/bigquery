@@ -151,8 +151,13 @@ else
       # Replace the date template in the query.
       if [[ $LENS != "" ]]; then
         echo -e "Generating ${metric} report for $LENS"
-        lens_join="JOIN ($(cat sql/lens/$LENS/histograms.sql | tr '\n' ' ')) USING (page, client)"
+        lens_clause="$(cat sql/lens/$LENS/histograms.sql)"
+        lens_clause_and="$(cat sql/lens/$LENS/histograms.sql) AND"
+        lens_join=""
+
         if [[ $metric == crux* ]]; then
+          lens_clause=""
+          lens_clause_and=""
           if [[ -f sql/lens/$LENS/crux_histograms.sql ]]; then
             echo "Using alternative crux lens join"
             lens_join="$(cat sql/lens/$LENS/crux_histograms.sql | sed -e "s/--noqa: disable=PRS//g" | tr '\n' ' ')"
@@ -165,9 +170,18 @@ else
             | sed -e "s/\${YYYY-MM-DD}/$DATE/g" \
             | sed -e "s/\${YYYYMM}/$YYYYMM/g")
         else
-          sql=$(sed -e "s/\(\`[^\`]*\`)*\)/\1 $lens_join/" $query \
-            | sed -e "s/\${YYYY-MM-DD}/$DATE/g" \
-            | sed -e "s/\${YYYYMM}/$YYYYMM/g")
+
+          if [[ $(grep -i "WHERE" $query) ]]; then
+            # If WHERE clause already exists then add to it, before GROUP BY
+            sql=$(sed -e "s/\(WHERE\)/\1 $lens_clause_and /" $query \
+              | sed -e "s/\${YYYY-MM-DD}/$DATE/g" \
+              | sed -e "s/\${YYYYMM}/$YYYYMM/g")
+          else
+            # If WHERE clause does not exists then add it, before GROUP BY
+            sql=$(sed -e "s/\(GROUP BY\)/WHERE $lens_clause \1/" $query \
+              | sed -e "s/\${YYYY-MM-DD}/$DATE/g" \
+              | sed -e "s/\${YYYYMM}/$YYYYMM/g")
+          fi
         fi
       else
         echo -e "Generating ${metric} report for base (no lens)"
