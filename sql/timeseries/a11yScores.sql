@@ -19,7 +19,7 @@ SELECT
   ROUND(APPROX_QUANTILES(score, 1000)[OFFSET(900)], 2) AS p90
 FROM (
   SELECT
-    format_timestamp('%Y_%m_%d', date) AS date,
+    date,
     client,
     IFNULL(LAX_FLOAT64(lighthouse.categories.accessibility.score) * 100, getA11yScore(lighthouse.reportCategories)) AS score
   FROM
