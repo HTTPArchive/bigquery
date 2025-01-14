@@ -1,6 +1,6 @@
 #standardSQL
 SELECT
-  date,
+  FORMAT_TIMESTAMP('%Y_%m_%d', date) AS date,
   UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   COUNT(0) AS urls

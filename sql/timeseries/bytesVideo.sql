@@ -1,6 +1,6 @@
 #standardSQL
 SELECT
-  date,
+  FORMAT_TIMESTAMP('%Y_%m_%d', date) AS date,
   UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesVideo), 1001)[OFFSET(101)] / 1024, 2) AS p10,

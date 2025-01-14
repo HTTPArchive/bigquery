@@ -1,7 +1,7 @@
 #standardSQL
 SELECT
-  date,
-  timestamp,
+  FORMAT_TIMESTAMP('%Y_%m_%d', date) AS date,
+  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(250)], 2) AS p25,
