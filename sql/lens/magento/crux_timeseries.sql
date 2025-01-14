@@ -8,7 +8,7 @@ INNER JOIN (
   WHERE
     date >= '2010-11-15' AND
     is_root_page AND
-    'Megento' IN UNNEST(technologies.technology)
+    'Magento' IN UNNEST(technologies.technology)
   GROUP BY
     1,
     2,
