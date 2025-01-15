@@ -10,8 +10,7 @@ SELECT
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(900)], 2) AS p90
 FROM (
   SELECT
-    FORMAT_TIMESTAMP('%Y_%m_%d', date) AS date,
-    UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
+    date,
     client,
     IFNULL(
       FLOAT64(lighthouse.audits['bootup-time'].numericValue),
