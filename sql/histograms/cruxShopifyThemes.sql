@@ -12,19 +12,27 @@ CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor F
   good + needs_improvement + poor > 0
 );
 
+-- Test CrUX data exists
+WITH crux_test AS ( -- noqa: ST03
+  SELECT
+    1
+  FROM
+    `chrome-ux-report.all.${YYYYMM}`
+),
+
 -- All Shopify shops in HTTPArchive
-WITH archive_pages AS (
+archive_pages AS (
   SELECT
     client,
     page AS url,
-    JSON_VALUE(custom_metrics, '$.ecommerce.Shopify.theme.name') AS theme_name,
-    JSON_VALUE(custom_metrics, '$.ecommerce.Shopify.theme.theme_store_id') AS theme_store_id
+    JSON_VALUE(custom_metrics.ecommerce.Shopify.theme.name) AS theme_name,
+    JSON_VALUE(custom_metrics.ecommerce.Shopify.theme.theme_store_id) AS theme_store_id
   FROM
-    `httparchive.all.pages`
+    `httparchive.crawl.pages`
   WHERE
-    date = DATE(REPLACE('${YYYY_MM_DD}', '_', '-')) AND
+    date = '${YYYY-MM-DD}' AND
     is_root_page AND
-    JSON_VALUE(custom_metrics, '$.ecommerce.Shopify.theme.name') IS NOT NULL --first grab all shops for market share
+    JSON_VALUE(custom_metrics.ecommerce.Shopify.theme.name) IS NOT NULL --first grab all shops for market share
 )
 
 SELECT
@@ -176,7 +184,7 @@ JOIN (
 -- Include null theme store ids so that we can get full market share within CrUX
 ON IFNULL(theme_names.theme_store_id, 'N/A') = IFNULL(archive_pages.theme_store_id, 'N/A')
 WHERE
-  date = DATE(REPLACE('${YYYY_MM_DD}', '_', '-')) AND
+  date = '${YYYY-MM-DD}' AND
   theme_names.rank = 1
 GROUP BY
   client,

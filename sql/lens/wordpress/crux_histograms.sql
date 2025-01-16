@@ -1,15 +1,14 @@
-INNER JOIN
-  (
+INNER JOIN (
   SELECT
-    url,
-    _TABLE_SUFFIX AS _TABLE_SUFFIX
+    page,
+    client
   FROM
-    `httparchive.technologies.${YYYY_MM_DD}_*`
+    `httparchive.crawl.pages`
   WHERE
-    app = 'WordPress' and
-    LENGTH(url) > 0
+    date = '${YYYY-MM-DD}' AND
+    'WordPress' IN UNNEST(technologies.technology)
   GROUP BY
     1,
     2
-  )
-ON (SUBSTR(url, 0, LENGTH(url) -1) = origin AND form_factor.name = IF(_TABLE_SUFFIX = 'desktop', 'desktop', 'phone'))
+)
+ON (SUBSTR(page, 0, LENGTH(page) - 1) = origin AND form_factor.name = IF(client = 'desktop', 'desktop', 'phone'))

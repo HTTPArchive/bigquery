@@ -8,11 +8,14 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      _TABLE_SUFFIX AS client,
+      client,
       COUNT(0) AS volume,
-      CAST(FLOOR(CAST(JSON_EXTRACT(payload, "$['_chromeUserTiming.firstContentfulPaint']") AS FLOAT64) / 1000) AS INT64) AS bin
+      CAST(FLOOR(FLOAT64(payload['_chromeUserTiming.firstContentfulPaint']) / 1000) AS INT64) AS bin
     FROM
-      `httparchive.pages.${YYYY_MM_DD}_*`
+      `httparchive.crawl.pages`
+    WHERE
+      date = '${YYYY-MM-DD}' AND
+      is_root_page
     GROUP BY
       bin,
       client

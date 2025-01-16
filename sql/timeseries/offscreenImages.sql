@@ -1,15 +1,18 @@
 #standardSQL
 SELECT
-  SUBSTR(_TABLE_SUFFIX, 0, 10) AS date,
-  UNIX_DATE(CAST(REPLACE(SUBSTR(_TABLE_SUFFIX, 0, 10), '_', '-') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
-  IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
-  ROUND(APPROX_QUANTILES(IFNULL(CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.details.overallSavingsBytes') AS INT64), CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.extendedInfo.value.wastedKb') AS INT64) * 1024), 1001)[OFFSET(101)] / 1024, 2) AS p10,
-  ROUND(APPROX_QUANTILES(IFNULL(CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.details.overallSavingsBytes') AS INT64), CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.extendedInfo.value.wastedKb') AS INT64) * 1024), 1001)[OFFSET(251)] / 1024, 2) AS p25,
-  ROUND(APPROX_QUANTILES(IFNULL(CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.details.overallSavingsBytes') AS INT64), CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.extendedInfo.value.wastedKb') AS INT64) * 1024), 1001)[OFFSET(501)] / 1024, 2) AS p50,
-  ROUND(APPROX_QUANTILES(IFNULL(CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.details.overallSavingsBytes') AS INT64), CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.extendedInfo.value.wastedKb') AS INT64) * 1024), 1001)[OFFSET(751)] / 1024, 2) AS p75,
-  ROUND(APPROX_QUANTILES(IFNULL(CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.details.overallSavingsBytes') AS INT64), CAST(JSON_EXTRACT(report, '$.audits.offscreen-images.extendedInfo.value.wastedKb') AS INT64) * 1024), 1001)[OFFSET(901)] / 1024, 2) AS p90
+  FORMAT_TIMESTAMP('%Y_%m_%d', date) AS date,
+  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
+  client,
+  ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes), INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(101)] / 1024, 2) AS p10,
+  ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes), INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(251)] / 1024, 2) AS p25,
+  ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes), INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(501)] / 1024, 2) AS p50,
+  ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes), INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(751)] / 1024, 2) AS p75,
+  ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes), INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(901)] / 1024, 2) AS p90
 FROM
-  `httparchive.lighthouse.*`
+  `httparchive.crawl.pages`
+WHERE
+  is_root_page AND
+  date >= '2017-06-01'
 GROUP BY
   date,
   timestamp,

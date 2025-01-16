@@ -8,11 +8,14 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      _TABLE_SUFFIX AS client,
+      client,
       COUNT(0) AS volume,
-      FLOOR(CAST(IFNULL(JSON_EXTRACT(report, '$.audits.bootup-time.numericValue'), JSON_EXTRACT(report, '$.audits.bootup-time.rawValue')) AS FLOAT64) / 100) / 10 AS bin
+      FLOOR(FLOAT64(IFNULL(lighthouse.audits['bootup-time'].numericValue, lighthouse.audits['bootup-time'].rawValue)) / 100) / 10 AS bin
     FROM
-      `httparchive.lighthouse.${YYYY_MM_DD}_*`
+      `httparchive.crawl.pages`
+    WHERE
+      date = '${YYYY-MM-DD}' AND
+      is_root_page
     GROUP BY
       bin,
       client

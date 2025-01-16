@@ -1,1 +1,4 @@
 /lens/*/crux_histograms.sql
+/lens/*/crux_timeseries.sql
+/lens/*/histograms.sql
+/lens/*/timeseries.sql

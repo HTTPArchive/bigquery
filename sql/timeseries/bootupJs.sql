@@ -1,8 +1,8 @@
 #standardSQL
 SELECT
-  SUBSTR(_TABLE_SUFFIX, 0, 10) AS date,
-  UNIX_DATE(CAST(REPLACE(SUBSTR(_TABLE_SUFFIX, 0, 10), '_', '-') AS DATE)) * 1000 * 60 * 60 * 24 AS timestamp,
-  IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
+  FORMAT_TIMESTAMP('%Y_%m_%d', date) AS date,
+  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
+  client,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(250)], 2) AS p25,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(500)], 2) AS p50,
@@ -10,13 +10,19 @@ SELECT
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(900)], 2) AS p90
 FROM (
   SELECT
-    _TABLE_SUFFIX AS _TABLE_SUFFIX,
-    CAST(IFNULL(
-      JSON_EXTRACT(report, '$.audits.bootup-time.numericValue'),
-      JSON_EXTRACT(report, '$.audits.bootup-time.rawValue')
-    ) AS FLOAT64) / 1000 AS value
+    date,
+    client,
+    IFNULL(
+      FLOAT64(lighthouse.audits['bootup-time'].numericValue),
+      FLOAT64(lighthouse.audits['bootup-time'].rawValue)
+    ) / 1000 AS value
   FROM
-    `httparchive.lighthouse.*`
+    `httparchive.crawl.pages`
+  WHERE
+    lighthouse IS NOT NULL AND
+    TO_JSON_STRING(lighthouse) != '{}' AND
+    date >= '2017-06-01' AND
+    is_root_page
 )
 GROUP BY
   date,
