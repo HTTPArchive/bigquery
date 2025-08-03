@@ -1,4 +1,3 @@
-#standardSQL
 -- Core web vitals by Shopify theme
 CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
   good / (good + needs_improvement + poor) >= 0.75

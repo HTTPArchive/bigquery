@@ -1,4 +1,3 @@
-#standardSQL
 CREATE TEMPORARY FUNCTION spreadBins(bins ARRAY<STRUCT<start NUMERIC, `end` NUMERIC, density FLOAT64>>)
 RETURNS ARRAY<STRUCT<client STRING, start NUMERIC, density FLOAT64>>
 LANGUAGE js AS """

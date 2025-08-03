@@ -1,4 +1,3 @@
-#standardSQL
 CREATE TEMPORARY FUNCTION getElements(payload STRING)
 RETURNS ARRAY<STRING> LANGUAGE js AS '''
 try {
