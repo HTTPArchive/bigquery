@@ -57,7 +57,6 @@ if [ ! -z "$MIN" ] || [ ! -z "$MAX" ]; then
 fi
 
 query=$(cat <<EOM
-#standardSQL
 SELECT
   CONCAT('20', SUBSTR(_TABLE_SUFFIX, 0, 8)) AS date
 FROM

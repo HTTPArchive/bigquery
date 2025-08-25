@@ -1,4 +1,3 @@
-#standardSQL
 SELECT
   *,
   SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
