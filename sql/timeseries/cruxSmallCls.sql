@@ -1,4 +1,3 @@
-#standardSQL
 # Small CLS by device
 
 CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
